@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import HeroSection from './sections/HeroSection';
 import SearchSection from './sections/SearchSection';
 import InteractiveMapSection from './sections/InteractiveMapSection';
@@ -33,6 +33,7 @@ export default function FALandingPage() {
   const [selectedCluster, setSelectedCluster] = useState<CityCluster | null>(null);
   const [mapMode, setMapMode] = useState<MapMode>('content');
   const [inViewMapSection, setInViewMapSection] = useState(false);
+  const savedScrollRef = useRef(0);
 
   // IntersectionObserver: detect when user scrolls into map section
   useEffect(() => {
@@ -47,7 +48,7 @@ export default function FALandingPage() {
   }, []);
 
   // ====================================================================
-  // MapInteractionController — manages Leaflet interaction state
+  // MapInteractionController — NO CSS layout changes, only JS scroll lock
   // ====================================================================
   useEffect(() => {
     const map = (window as any).__ACCOUNTABILITY_MAP__;
@@ -62,29 +63,36 @@ export default function FALandingPage() {
       try { map.keyboard?.enable?.(); } catch {}
       try { map.touchZoom?.enable?.(); } catch {}
 
-      // Lock body scroll
-      document.body.style.overflow = 'hidden';
+      // Save current scroll position
+      savedScrollRef.current = window.scrollY;
 
-      // Force Leaflet to recalculate tile positions after layout change
-      setTimeout(() => map.invalidateSize(), 150);
+      // Lock scroll by restoring position instantly on every scroll event
+      // No CSS change means no layout shift → Leaflet tiles stay intact
+      const lockScroll = () => {
+        window.scrollTo(0, savedScrollRef.current);
+      };
+      window.addEventListener('scroll', lockScroll, { passive: false });
+
+      // Force Leaflet to recalculate after any potential layout shift
+      const t0 = setTimeout(() => map.invalidateSize(), 0);
+      const t1 = setTimeout(() => map.invalidateSize(), 100);
+      const t2 = setTimeout(() => map.invalidateSize(), 300);
+
+      return () => {
+        window.removeEventListener('scroll', lockScroll);
+        clearTimeout(t0); clearTimeout(t1); clearTimeout(t2);
+      };
     } else {
-      // Content mode: disable interactions that conflict with page scroll
+      // Content mode
       try { map.scrollWheelZoom?.disable?.(); } catch {}
       try { map.doubleClickZoom?.disable?.(); } catch {}
       try { map.boxZoom?.disable?.(); } catch {}
       try { map.keyboard?.disable?.(); } catch {}
-      // dragging stays enabled for limited pan
-
-      // Restore body scroll
-      document.body.style.overflow = '';
 
       // Force recalculate
-      setTimeout(() => map.invalidateSize(), 150);
+      const timer = setTimeout(() => map.invalidateSize(), 100);
+      return () => clearTimeout(timer);
     }
-
-    return () => {
-      document.body.style.overflow = '';
-    };
   }, [mapMode]);
 
   // Invalidate Leaflet when entering map section
@@ -96,7 +104,7 @@ export default function FALandingPage() {
     return () => clearTimeout(timer);
   }, [inViewMapSection]);
 
-  // Invalidate when panel opens/closes (layout shift)
+  // Invalidate when panel opens/closes
   useEffect(() => {
     const map = (window as any).__ACCOUNTABILITY_MAP__;
     if (!map) return;
@@ -134,16 +142,12 @@ export default function FALandingPage() {
         <div
           id="persistent-map"
           className={`w-full h-full ${inMap && isExplore ? 'map-interactive' : 'map-static'}`}
-          style={{
-            pointerEvents: inMap ? 'auto' : 'none',
-            background: '#1a1a1a',
-          }}
+          style={{ pointerEvents: inMap ? 'auto' : 'none' }}
         />
       </div>
 
       {/* ======================================================== */}
-      {/* Overlay — COMPLETELY REMOVED from DOM in map section */}
-      {/* to prevent backdrop-filter compositing over Leaflet tiles */}
+      {/* Overlay — REMOVED from DOM in map section */}
       {/* ======================================================== */}
       {!inMap && (
         <div
