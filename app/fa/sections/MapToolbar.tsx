@@ -8,15 +8,18 @@ interface MapToolbarProps {
   sourceFilter: SourceFilter;
   clustersEnabled: boolean;
   labelsEnabled: boolean;
+  dragEnabled: boolean;
   onZoomIn: () => void;
   onZoomOut: () => void;
   onReset: () => void;
   onSourceFilter: (filter: SourceFilter) => void;
   onToggleClusters: () => void;
   onToggleLabels: () => void;
+  onToggleDrag: () => void;
 }
 
 type ToolItem =
+  | { id: 'drag'; icon: (active: boolean) => JSX.Element; label: string; isToggle: true }
   | { id: 'zoomin' | 'zoomout' | 'reset'; icon: () => JSX.Element; label: string }
   | { id: 'filter-all'; icon: () => JSX.Element; label: string; isFilter: true; filterValue: SourceFilter }
   | { id: 'filter-basij' | 'filter-sepah' | 'filter-lec'; icon: () => JSX.Element; label: string; isFilter: true; filterValue: SourceFilter }
@@ -25,6 +28,15 @@ type ToolItem =
   | { id: 'separator2' };
 
 const TOOLS: ToolItem[] = [
+  {
+    id: 'drag', icon: (active: boolean) => (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+        <path d="M7 8h10M7 12h10M7 16h6" />
+        <path d="M16 8l2 2-2 2M4 12l2-2 2 2" />
+      </svg>
+    ), label: 'جا‌به‌جایی نقشه', isToggle: true
+  },
+  { id: 'separator1' },
   { id: 'zoomin', icon: () => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35M11 8v6M8 11h6" />
@@ -40,7 +52,7 @@ const TOOLS: ToolItem[] = [
       <path d="M12 2a10 10 0 1 0 10 10h-2a8 8 0 1 1-8-8" /><path d="M22 12h-4l2-3" />
     </svg>
   ), label: 'بازنشانی' },
-  { id: 'separator1' as const },
+  { id: 'separator2' },
   { id: 'filter-all', icon: () => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
@@ -61,26 +73,16 @@ const TOOLS: ToolItem[] = [
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
     </svg>
   ), label: 'نیروی انتظامی', isFilter: true, filterValue: 'lec' },
-  { id: 'separator2' as const },
-  { id: 'clusters', icon: (active: boolean) => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="9" cy="9" r="2" /><circle cx="17" cy="7" r="2" /><circle cx="8" cy="17" r="2" /><circle cx="16" cy="16" r="2" /><path d="M9 9v8M17 7v9M11 11h4" />
-    </svg>
-  ), label: 'گروه‌بندی نقاط', isToggle: true },
-  { id: 'labels', icon: (active: boolean) => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M4 7V4h16v3M9 20h6M12 4v16" />
-    </svg>
-  ), label: 'نمایش برچسب‌ها', isToggle: true },
 ];
 
 export default function MapToolbar({
-  sourceFilter, clustersEnabled, labelsEnabled,
+  sourceFilter, clustersEnabled, labelsEnabled, dragEnabled,
   onZoomIn, onZoomOut, onReset,
-  onSourceFilter, onToggleClusters, onToggleLabels,
+  onSourceFilter, onToggleClusters, onToggleLabels, onToggleDrag,
 }: MapToolbarProps) {
   const handleClick = useCallback((id: string) => {
     switch (id) {
+      case 'drag': onToggleDrag(); break;
       case 'zoomin': onZoomIn(); break;
       case 'zoomout': onZoomOut(); break;
       case 'reset': onReset(); break;
@@ -91,16 +93,20 @@ export default function MapToolbar({
       case 'clusters': onToggleClusters(); break;
       case 'labels': onToggleLabels(); break;
     }
-  }, [onZoomIn, onZoomOut, onReset, onSourceFilter, onToggleClusters, onToggleLabels]);
+  }, [onZoomIn, onZoomOut, onReset, onSourceFilter, onToggleClusters, onToggleLabels, onToggleDrag]);
 
   return (
     <div className="absolute right-4 top-1/2 -translate-y-1/2 z-[9990] flex flex-col gap-1.5">
       {TOOLS.map((tool) => {
-        if (tool.id === 'separator1' || tool.id === 'separator2') return <div key={tool.id} className="w-full h-px bg-white/5 my-1" />;
+        if (tool.id === 'separator1' || tool.id === 'separator2') {
+          return <div key={tool.id} className="w-full h-px bg-white/5 my-1" />;
+        }
 
+        const isFilter = (tool as any).isFilter;
+        const isToggle = (tool as any).isToggle;
         const active = !!(
-          ((tool as any).isFilter && (tool as any).filterValue === sourceFilter) ||
-          ((tool as any).isToggle && ((tool.id === 'clusters' && clustersEnabled) || (tool.id === 'labels' && labelsEnabled)))
+          (isFilter && (tool as any).filterValue === sourceFilter) ||
+          (isToggle && ((tool.id === 'drag' && dragEnabled) || (tool.id === 'clusters' && clustersEnabled) || (tool.id === 'labels' && labelsEnabled)))
         );
 
         return (

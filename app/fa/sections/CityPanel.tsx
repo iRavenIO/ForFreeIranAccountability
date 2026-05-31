@@ -131,12 +131,12 @@ export default function CityPanel({ city, province, cluster, onClose }: Props) {
   const totalPages = Math.ceil(total / 30);
 
   return (
-    <div className="fixed inset-0 z-[9998] flex justify-end">
+    <div className="fixed inset-0 z-[9998] flex justify-start">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
 
       {/* Panel */}
-      <div className="relative w-full max-w-md bg-black/80 backdrop-blur-2xl border-l border-white/10 h-full overflow-y-auto shadow-2xl">
+      <div className="relative w-full max-w-md bg-black/80 backdrop-blur-2xl border-r border-white/10 h-full overflow-y-auto shadow-2xl">
         <div className="p-5">
           {/* Header */}
           <div className="flex items-start justify-between mb-5">
