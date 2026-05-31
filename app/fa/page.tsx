@@ -31,26 +31,32 @@ export default function FALandingPage() {
   const [selectedCluster, setSelectedCluster] = useState<CityCluster | null>(null);
   const [inViewMapSection, setInViewMapSection] = useState(false);
 
+  // Scroll-based detection: MUCH more reliable than IntersectionObserver
   useEffect(() => {
-    const el = document.getElementById('map-section');
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setInViewMapSection(entry.isIntersecting),
-      { rootMargin: '-30% 0px -40% 0px' }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
+    const check = () => {
+      const el = document.getElementById('map-section');
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      // In view when the section occupies the majority of the viewport
+      const inView = rect.top < window.innerHeight * 0.8 && rect.bottom > window.innerHeight * 0.2;
+      setInViewMapSection(inView);
+    };
+    window.addEventListener('scroll', check, { passive: true });
+    check(); // initial
+    return () => window.removeEventListener('scroll', check);
   }, []);
 
+  // Auto-disable scrollWheelZoom when in map section
   useEffect(() => {
     const map = (window as any).__ACCOUNTABILITY_MAP__;
     if (!map) return;
     if (inViewMapSection) {
       try { map.scrollWheelZoom?.disable?.(); } catch {}
     }
-    setTimeout(() => map.invalidateSize(), 100);
+    setTimeout(() => map.invalidateSize(), 50);
   }, [inViewMapSection]);
 
+  // Invalidate when panel opens/closes
   useEffect(() => {
     const map = (window as any).__ACCOUNTABILITY_MAP__;
     if (!map) return;

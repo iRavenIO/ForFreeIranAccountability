@@ -21,7 +21,8 @@ type ToolItem =
   | { id: 'filter-all'; icon: () => JSX.Element; label: string; isFilter: true; filterValue: SourceFilter }
   | { id: 'filter-basij' | 'filter-sepah' | 'filter-lec'; icon: () => JSX.Element; label: string; isFilter: true; filterValue: SourceFilter }
   | { id: 'clusters' | 'labels'; icon: (active: boolean) => JSX.Element; label: string; isToggle: true }
-  | { id: 'separator' };
+  | { id: 'separator1' }
+  | { id: 'separator2' };
 
 const TOOLS: ToolItem[] = [
   { id: 'zoomin', icon: () => (
@@ -39,7 +40,7 @@ const TOOLS: ToolItem[] = [
       <path d="M12 2a10 10 0 1 0 10 10h-2a8 8 0 1 1-8-8" /><path d="M22 12h-4l2-3" />
     </svg>
   ), label: 'بازنشانی' },
-  { id: 'separator' },
+  { id: 'separator1' as const },
   { id: 'filter-all', icon: () => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
@@ -60,7 +61,7 @@ const TOOLS: ToolItem[] = [
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
     </svg>
   ), label: 'نیروی انتظامی', isFilter: true, filterValue: 'lec' },
-  { id: 'separator' },
+  { id: 'separator2' as const },
   { id: 'clusters', icon: (active: boolean) => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <circle cx="9" cy="9" r="2" /><circle cx="17" cy="7" r="2" /><circle cx="8" cy="17" r="2" /><circle cx="16" cy="16" r="2" /><path d="M9 9v8M17 7v9M11 11h4" />
@@ -95,7 +96,7 @@ export default function MapToolbar({
   return (
     <div className="absolute right-4 top-1/2 -translate-y-1/2 z-[9990] flex flex-col gap-1.5">
       {TOOLS.map((tool) => {
-        if (tool.id === 'separator') return <div key={tool.id} className="w-full h-px bg-white/5 my-1" />;
+        if (tool.id === 'separator1' || tool.id === 'separator2') return <div key={tool.id} className="w-full h-px bg-white/5 my-1" />;
 
         const active = !!(
           ((tool as any).isFilter && (tool as any).filterValue === sourceFilter) ||
