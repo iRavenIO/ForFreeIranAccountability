@@ -33,18 +33,6 @@ export default function InteractiveMapSection({
   const [labelsEnabled, setLabelsEnabled] = useState(false);
   const isExploreActive = mapMode === 'explore';
 
-  // Lock/unlock body scroll based on map mode
-  useEffect(() => {
-    if (isExploreActive) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isExploreActive]);
-
   // ESC to exit explore mode
   useEffect(() => {
     if (!isExploreActive) return;
@@ -61,16 +49,12 @@ export default function InteractiveMapSection({
 
   const handleZoomIn = useCallback(() => {
     const map = (window as any).__ACCOUNTABILITY_MAP__;
-    if (map) {
-      map.setZoom(map.getZoom() + 1);
-    }
+    if (map) map.setZoom(map.getZoom() + 1);
   }, []);
 
   const handleZoomOut = useCallback(() => {
     const map = (window as any).__ACCOUNTABILITY_MAP__;
-    if (map) {
-      map.setZoom(map.getZoom() - 1);
-    }
+    if (map) map.setZoom(map.getZoom() - 1);
   }, []);
 
   const handleReset = useCallback(() => {
@@ -81,7 +65,6 @@ export default function InteractiveMapSection({
   const handleSourceFilter = useCallback(
     (filter: SourceFilter) => {
       setSourceFilter(filter);
-      // Trigger marker reload in HeroSection via window event
       window.dispatchEvent(
         new CustomEvent('map-source-filter', { detail: { filter } })
       );
@@ -95,11 +78,12 @@ export default function InteractiveMapSection({
 
   const handleToggleLabels = useCallback(() => {
     setLabelsEnabled((prev) => !prev);
+    // TODO: implement label toggling on Leaflet map
   }, []);
 
   return (
     <section id="map-section" className="relative min-h-screen">
-      {/* Map toolbar — floating left-side vertical bar */}
+      {/* Map toolbar — floating right-side vertical bar */}
       <MapToolbar
         mapMode={mapMode}
         sourceFilter={sourceFilter}
@@ -116,26 +100,28 @@ export default function InteractiveMapSection({
 
       {/* Status label when in explore mode */}
       {isExploreActive && (
-        <div className="absolute top-24 left-1/2 -translate-x-1/2 z-[9990] animate-fadeIn">
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[9990] animate-fadeIn pointer-events-none">
           <span className="bg-[#8b1e1e]/80 backdrop-blur-sm border border-[#8b1e1e] text-white text-xs px-5 py-2 rounded-full shadow-lg">
             حالت تعامل با نقشه فعال است
           </span>
         </div>
       )}
 
-      {/* Floating title card (compact, top-right) */}
-      <div className="absolute top-24 right-4 z-[2]">
-        <div className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-xl px-5 py-3 text-right shadow-lg">
-          <h3 className="text-white font-semibold text-sm">نقشه تعاملی</h3>
-          <p className="text-[#6b6b6b] text-[10px] mt-0.5">
+      {/* Floating title card — compact, top center, does NOT block map */}
+      <div
+        className="absolute top-20 left-1/2 -translate-x-1/2 z-[1] pointer-events-none"
+      >
+        <div className="bg-black/40 backdrop-blur-sm border border-white/5 rounded-lg px-4 py-2 text-center shadow-md">
+          <h3 className="text-white font-semibold text-xs">نقشه تعاملی</h3>
+          <p className="text-[#6b6b6b] text-[9px] mt-0.5">
             {isExploreActive
-              ? 'نقشه در حالت کاوش — ESC برای خروج'
-              : 'برای کاوش، حالت نقشه را فعال کنید'}
+              ? 'کاوش — ESC برای خروج'
+              : 'فعال‌سازی حالت کاوش برای تعامل'}
           </p>
         </div>
       </div>
 
-      {/* Exit explore button (floating) */}
+      {/* Exit explore button (floating bottom) */}
       {isExploreActive && (
         <button
           onClick={() => onMapModeChange('content')}
@@ -148,7 +134,6 @@ export default function InteractiveMapSection({
         </button>
       )}
 
-      {/* CSS for fadeIn animation */}
       <style jsx>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translate(-50%, -4px); }

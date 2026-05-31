@@ -226,7 +226,7 @@ export default function MapToolbar({
   );
 
   return (
-    <div className="absolute left-4 top-24 z-[9990] flex flex-col gap-1.5">
+    <div className="absolute right-4 top-1/2 -translate-y-1/2 z-[9990] flex flex-col gap-1.5">
       {TOOLS.map((tool) => {
         if (tool.id === 'separator') {
           return (
@@ -266,7 +266,7 @@ export default function MapToolbar({
             </button>
 
             {/* Persian tooltip */}
-            <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+            <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
               <span className="bg-black/80 backdrop-blur-sm border border-white/10 text-white text-[11px] px-3 py-1.5 rounded-lg shadow-lg">
                 {tool.id === 'explore' && mapMode === 'explore'
                   ? (tool as any).activeLabel

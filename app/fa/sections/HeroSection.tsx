@@ -17,15 +17,14 @@ interface CityCluster {
   cities: ClusterCity[];
 }
 
+type SourceFilter = 'all' | 'basij' | 'sepah' | 'lec';
+
 interface Props {
   onCityClick: (city: string, province: string | null) => void;
   onClusterClick?: (cluster: CityCluster) => void;
-  mapMode?: 'content' | 'explore';
 }
 
-type SourceFilter = 'all' | 'basij' | 'sepah' | 'lec';
-
-export default function HeroSection({ onCityClick, onClusterClick, mapMode = 'content' }: Props) {
+export default function HeroSection({ onCityClick, onClusterClick }: Props) {
   const [clusters, setClusters] = useState<CityCluster[]>([]);
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
   const mapInitRef = useRef(false);
@@ -96,6 +95,7 @@ export default function HeroSection({ onCityClick, onClusterClick, mapMode = 'co
         scrollWheelZoom: true,
         touchZoom: true,
         doubleClickZoom: true,
+        boxZoom: true,
         keyboard: true,
         zoomSnap: 0.5,
         zoomDelta: 0.5,
@@ -201,17 +201,6 @@ export default function HeroSection({ onCityClick, onClusterClick, mapMode = 'co
       id="hero-section"
       className="relative min-h-screen flex items-center justify-center px-4 pt-14"
     >
-      {/* Gradient overlay — fades out in explore mode */}
-      <div
-        className="absolute inset-0 z-[1] transition-all duration-500"
-        style={{
-          opacity: mapMode === 'explore' ? 0 : 1,
-          background: 'linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0.3), rgba(0,0,0,0.6))',
-          backdropFilter: mapMode === 'explore' ? 'blur(0px)' : 'blur(8px)',
-          WebkitBackdropFilter: mapMode === 'explore' ? 'blur(0px)' : 'blur(8px)',
-        }}
-      />
-
       {/* Hero content */}
       <div className="relative z-[2] text-center max-w-3xl mx-auto pt-16 pb-24">
         <h1 className="text-5xl md:text-7xl font-bold text-white mb-4 leading-tight">
