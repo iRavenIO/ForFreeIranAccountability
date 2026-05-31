@@ -91,7 +91,7 @@ export default function HeroSection({ onCityClick, onClusterClick }: Props) {
         zoom: 5.2,
         zoomControl: false,
         attributionControl: false,
-        dragging: false,
+        dragging: true,
         scrollWheelZoom: false,
         touchZoom: true,
         doubleClickZoom: true,

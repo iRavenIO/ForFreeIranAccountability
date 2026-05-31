@@ -18,7 +18,6 @@ export default function FALandingPage() {
   const [inViewMapSection, setInViewMapSection] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
 
-  // Scroll-based map section detection
   useEffect(() => {
     const check = () => {
       const el = document.getElementById('map-section');
@@ -31,30 +30,18 @@ export default function FALandingPage() {
     return () => window.removeEventListener('scroll', check);
   }, []);
 
-  // Vanilla JS: toggle map mode WITHOUT React re-render of the map container
+  // Toggle marker opacity via vanilla JS (no React re-render)
   useEffect(() => {
     const el = mapRef.current;
     if (!el) return;
     if (inViewMapSection) {
       el.classList.remove('map-static');
       el.classList.add('map-interactive');
-      el.style.pointerEvents = 'auto';
     } else {
       el.classList.remove('map-interactive');
       el.classList.add('map-static');
-      el.style.pointerEvents = 'none';
     }
-    // Invalidate Leaflet
-    const map = (window as any).__ACCOUNTABILITY_MAP__;
-    if (map) setTimeout(() => map.invalidateSize(), 50);
   }, [inViewMapSection]);
-
-  // Disable scrollWheelZoom in map section so page scroll works
-  useEffect(() => {
-    const map = (window as any).__ACCOUNTABILITY_MAP__;
-    if (!map) return;
-    try { map.scrollWheelZoom?.disable?.(); } catch {}
-  }, []);
 
   useEffect(() => {
     const map = (window as any).__ACCOUNTABILITY_MAP__;
@@ -76,15 +63,14 @@ export default function FALandingPage() {
 
   return (
     <div className="relative min-h-screen">
-      {/* Map — static render, NEVER changes via React. Vanilla JS handles toggles. */}
+      {/* Map — ALWAYS pointer-events auto. Sections above it pass events through. */}
       <div className="fixed inset-0 z-0">
-        <div ref={mapRef} id="persistent-map" className="w-full h-full map-static" style={{ pointerEvents: 'none' }} />
+        <div ref={mapRef} id="persistent-map" className="w-full h-full map-static" />
       </div>
 
       {/* Blur overlay — only in non-map sections */}
       {!inMap && (
-        <div
-          className="fixed inset-0 z-[1]"
+        <div className="fixed inset-0 z-[1]"
           style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', pointerEvents: 'none' }}
         />
       )}

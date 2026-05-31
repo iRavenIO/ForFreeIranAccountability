@@ -96,7 +96,7 @@ export default function MapToolbar({
   }, [onZoomIn, onZoomOut, onReset, onSourceFilter, onToggleClusters, onToggleLabels, onToggleDrag]);
 
   return (
-    <div className="absolute right-4 top-1/2 -translate-y-1/2 z-[9990] flex flex-col gap-1.5">
+    <div className="absolute right-4 top-1/2 -translate-y-1/2 z-[9990] flex flex-col gap-1.5 pointer-events-auto">
       {TOOLS.map((tool) => {
         if (tool.id === 'separator1' || tool.id === 'separator2') {
           return <div key={tool.id} className="w-full h-px bg-white/5 my-1" />;

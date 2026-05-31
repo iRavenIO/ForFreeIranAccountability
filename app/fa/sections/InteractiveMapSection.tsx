@@ -12,7 +12,7 @@ export default function InteractiveMapSection({ onClusterClick }: Props) {
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
   const [clustersEnabled, setClustersEnabled] = useState(true);
   const [labelsEnabled, setLabelsEnabled] = useState(false);
-  const [dragEnabled, setDragEnabled] = useState(false);
+  const [dragEnabled, setDragEnabled] = useState(true);
 
   // Toggle Leaflet dragging
   useEffect(() => {
@@ -45,7 +45,7 @@ export default function InteractiveMapSection({ onClusterClick }: Props) {
   const handleToggleDrag = useCallback(() => setDragEnabled((p) => !p), []);
 
   return (
-    <section id="map-section" className="relative min-h-screen">
+    <section id="map-section" className="relative min-h-screen pointer-events-none">
       <MapToolbar
         sourceFilter={sourceFilter}
         clustersEnabled={clustersEnabled}
