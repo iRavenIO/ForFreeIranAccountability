@@ -1,0 +1,29 @@
+# Database
+db/accountability.db
+db/accountability.db-journal
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# Misc
+*.tsbuildinfo

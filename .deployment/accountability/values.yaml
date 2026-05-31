@@ -1,0 +1,93 @@
+fullname: "iran-accountability"
+
+vault:
+  pathPrefix: k3s-ha00/iran
+
+# Image configuration for Harbor registry
+image:
+  repository: harbor-registry.tail02a6d.ts.net/application-images/iran-accountability
+  tag: latest
+  pullPolicy: Always
+
+# Image pull secrets for Harbor authentication
+imagePullSecrets:
+  - name: harbor-registry-secret
+
+# Accountability application configuration
+accountability:
+  name: iran-accountability
+  replicas: 1
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+      ephemeral-storage: 200Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+      ephemeral-storage: 100Mi
+  env:
+    NODE_ENV: "production"
+    NEXT_PUBLIC_SITE_URL: "https://accountability.forfreeiran.com"
+    NEXT_PUBLIC_APP_URL: "https://accountability.forfreeiran.com"
+    DATABASE_PATH: "/app/data/accountability.db"
+
+  secretEnv:
+    - name: INTERNAL_ADMIN_TOKEN
+      secretKeyRef:
+        name: iran-accountability-secrets
+        key: internal-admin-token
+
+  strategy:
+    type: canary
+    canary:
+      maxSurge: 1
+      maxUnavailable: 0
+
+# ConfigMap configuration
+config:
+  enabled: false
+  data: {}
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 3000
+  targetPort: 3000
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-k3s-ha00
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-next-upstream: "error timeout http_502 http_503"
+    nginx.ingress.kubernetes.io/proxy-next-upstream-tries: "2"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "10"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+  host: accountability.forfreeiran.com
+  tls:
+    enabled: true
+    secretName: accountability-forfreeiran-com-tls
+
+# Argo Rollouts dependency
+argo-rollouts:
+  enabled: true
+
+# Persistent volume for SQLite database
+persistence:
+  enabled: true
+  accessMode: ReadWriteOnce
+  size: 1Gi
+  storageClass: longhorn
+  mountPath: /app/data
+
+# Observability: logging annotations
+logging:
+  enabled: true
+  app: "iran-accountability"
+  component: "web"
+  logClass: "app"
+  retentionClass: "standard"
+  environment: "production"

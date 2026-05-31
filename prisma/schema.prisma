@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model RawRecord {
+  id                 Int      @id @default(autoincrement())
+  sourceFile         String
+  sourceSheet        String
+  rawJson            String
+  normalizedJson     String?
+  fullName           String?
+  province           String?
+  city               String?
+  postalCodeInternal String?
+  approximateLat     Float?
+  approximateLng     Float?
+  publicStatus       String   @default("pending")
+  reviewStatus       String   @default("unreviewed")
+  createdAt          DateTime @default(now())
+
+  @@index([sourceFile])
+  @@index([province])
+  @@index([city])
+  @@index([fullName])
+  @@index([publicStatus])
+  @@index([reviewStatus])
+}
+
+model PublicPerson {
+  id                Int      @id @default(autoincrement())
+  fullName          String?
+  province          String?
+  city              String?
+  sourceFile        String?
+  publicStatus      String   @default("published")
+  reviewStatus      String   @default("reviewed")
+  notesPublic       String?
+  approximateCityLat Float?
+  approximateCityLng Float?
+  createdAt         DateTime @default(now())
+
+  @@index([fullName])
+  @@index([province])
+  @@index([city])
+  @@index([reviewStatus])
+}
+
+model PublicCityPoint {
+  id           Int      @id @default(autoincrement())
+  province     String?
+  city         String?
+  lat          Float?
+  lng          Float?
+  totalRecords Int      @default(0)
+  lastUpdated  DateTime @default(now())
+
+  @@index([province])
+  @@index([city])
+  @@index([lat, lng])
+}
+
+model ImportLog {
+  id                   Int      @id @default(autoincrement())
+  fileName             String
+  rowsTotal            Int      @default(0)
+  rowsImported         Int      @default(0)
+  rowsPublic           Int      @default(0)
+  rowsHiddenSensitive  Int      @default(0)
+  rowsFailed           Int      @default(0)
+  warningsJson         String?
+  createdAt            DateTime @default(now())
+}

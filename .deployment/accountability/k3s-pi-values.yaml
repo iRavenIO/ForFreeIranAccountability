@@ -1,0 +1,9 @@
+# k3s-pi cluster-specific overrides
+fullnameOverride: "iran-accountability"
+
+vault:
+  pathPrefix: k3s-pi/iran
+
+ingress:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-k3s-pi

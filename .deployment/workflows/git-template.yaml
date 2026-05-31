@@ -1,0 +1,58 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: iran-accountability-git-template
+spec:
+  templates:
+    - name: update-version
+      inputs:
+        parameters:
+          - name: docker-tag
+          - name: git-email
+            default: "ci@iraven.io"
+          - name: git-name
+            default: "CI Bot"
+      volumes:
+        - name: workspace
+          emptyDir: {}
+      container:
+        image: alpine/git:latest
+        command: [sh, -c]
+        args:
+          - |
+            TAG="{{inputs.parameters.docker-tag}}"
+            TAG=$(echo "$TAG" | sed 's|refs/tags/||')
+
+            git clone --depth 1 --branch main git@github.com:iRavenIO/ForFreeIranAccountability.git /workspace/repo
+            cd /workspace/repo
+
+            git config user.email "{{inputs.parameters.git-email}}"
+            git config user.name "{{inputs.parameters.git-name}}"
+
+            echo "Updating version to: ${TAG}"
+            cat > .deployment/accountability/version-values.yaml << EOF
+          # This file is automatically updated by CI/CD pipeline
+          # Do not edit manually
+          image:
+            tag: "${TAG}"
+          EOF
+
+            git add .deployment/accountability/version-values.yaml
+            git diff --cached --quiet || {
+              git commit -m "ci: update version to ${TAG} [skip ci]"
+              git push origin main
+              echo "Version updated to ${TAG}"
+            }
+        volumeMounts:
+          - name: workspace
+            mountPath: /workspace
+        env:
+          - name: GIT_SSH_COMMAND
+            value: "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "100m"

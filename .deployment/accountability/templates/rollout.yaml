@@ -1,0 +1,117 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: {{ include "iran-accountability.fullname" . }}
+  labels:
+    {{- include "iran-accountability.labels" . | nindent 4 }}
+  annotations:
+    meta.helm.sh/release-name: {{ .Release.Name }}
+    meta.helm.sh/release-namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.accountability.replicas }}
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      {{- include "iran-accountability.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "iran-accountability.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: web
+      {{- if .Values.logging }}
+      {{- if .Values.logging.enabled }}
+      annotations:
+        logging.chance.io/enabled: "true"
+        logging.chance.io/app: {{ .Values.logging.app | default "iran-accountability" | quote }}
+        logging.chance.io/component: {{ .Values.logging.component | default "web" | quote }}
+        logging.chance.io/log-class: {{ .Values.logging.logClass | default "app" | quote }}
+        logging.chance.io/retention-class: {{ .Values.logging.retentionClass | default "standard" | quote }}
+        logging.chance.io/environment: {{ .Values.logging.environment | default "production" | quote }}
+      {{- end }}
+      {{- end }}
+    spec:
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml .Values.imagePullSecrets | nindent 8 }}
+      {{- end }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    {{- include "iran-accountability.selectorLabels" . | nindent 20 }}
+                topologyKey: kubernetes.io/hostname
+      {{- if .Values.persistence.enabled }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "iran-accountability.fullname" . }}-pvc
+      {{- end }}
+      containers:
+        - name: {{ .Values.accountability.name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.targetPort }}
+              protocol: TCP
+          env:
+            {{- range $key, $value := .Values.accountability.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- range .Values.accountability.secretEnv }}
+            - name: {{ .name }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "iran-accountability.fullname" $ }}-secrets
+                  key: {{ .secretKeyRef.key }}
+            {{- end }}
+          {{- if .Values.persistence.enabled }}
+          volumeMounts:
+            - name: data
+              mountPath: {{ .Values.persistence.mountPath }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.accountability.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 1001
+            runAsGroup: 1001
+            capabilities:
+              drop:
+                - ALL
+      securityContext:
+        fsGroup: 1001
+      restartPolicy: Always
+
+  {{- if eq .Values.accountability.strategy.type "canary" }}
+  strategy:
+    canary:
+      maxSurge: {{ .Values.accountability.strategy.canary.maxSurge }}
+      maxUnavailable: {{ .Values.accountability.strategy.canary.maxUnavailable }}
+  {{- else if eq .Values.accountability.strategy.type "blueGreen" }}
+  strategy:
+    blueGreen:
+      activeService: {{ include "iran-accountability.fullname" . }}
+      previewService: {{ include "iran-accountability.fullname" . }}-preview
+  {{- end }}

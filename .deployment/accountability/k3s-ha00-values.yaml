@@ -1,0 +1,31 @@
+fullname: "iran-accountability"
+
+# Production overrides for k3s-ha00 cluster
+accountability:
+  replicas: 2
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+      ephemeral-storage: 500Mi
+    requests:
+      cpu: 200m
+      memory: 512Mi
+      ephemeral-storage: 100Mi
+  env:
+    NODE_ENV: "production"
+    NEXT_PUBLIC_SITE_URL: "https://accountability.forfreeiran.com"
+    NEXT_PUBLIC_APP_URL: "https://accountability.forfreeiran.com"
+    DATABASE_PATH: "/app/data/accountability.db"
+
+ingress:
+  enabled: true
+  host: accountability.forfreeiran.com
+  tls:
+    enabled: true
+    secretName: accountability-forfreeiran-com-tls
+
+persistence:
+  enabled: true
+  size: 2Gi
+  storageClass: longhorn

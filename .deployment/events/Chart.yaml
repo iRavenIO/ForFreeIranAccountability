@@ -1,0 +1,6 @@
+apiVersion: v2
+name: iran-accountability-events
+description: Argo Events configuration for Accountability Archive
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

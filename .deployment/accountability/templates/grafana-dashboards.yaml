@@ -1,0 +1,85 @@
+{{- if .Values.logging }}
+{{- if .Values.logging.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "iran-accountability.fullname" . }}-dashboards
+  labels:
+    {{- include "iran-accountability.labels" . | nindent 4 }}
+    grafana_dashboard: "1"
+  annotations:
+    grafana_folder: "Iran"
+data:
+  iran-accountability-overview.json: |
+    {
+      "uid": "iran-accountability-overview",
+      "title": "Iran Accountability — Operations",
+      "tags": ["iran", "accountability"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "panels": [
+        {
+          "id": 100,
+          "type": "row",
+          "title": "Service Health",
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }
+        },
+        {
+          "id": 1,
+          "type": "logs",
+          "title": "Accountability — All Logs",
+          "gridPos": { "h": 10, "w": 24, "x": 0, "y": 1 },
+          "datasource": { "type": "victoriametrics-logs-datasource", "uid": "victoria-logs" },
+          "targets": [{ "expr": "_stream:{app=\"iran-accountability\",component=\"web\"}", "refId": "A" }],
+          "options": { "showTime": true, "showLabels": true, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true }
+        },
+        {
+          "id": 2,
+          "type": "logs",
+          "title": "Accountability — Errors",
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 11 },
+          "datasource": { "type": "victoriametrics-logs-datasource", "uid": "victoria-logs" },
+          "targets": [{ "expr": "_stream:{app=\"iran-accountability\",component=\"web\"} AND level:error", "refId": "A" }],
+          "options": { "showTime": true, "showLabels": true, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true }
+        },
+        {
+          "id": 3,
+          "type": "logs",
+          "title": "Accountability — SQLite & Database",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 19 },
+          "datasource": { "type": "victoriametrics-logs-datasource", "uid": "victoria-logs" },
+          "targets": [{ "expr": "_stream:{app=\"iran-accountability\",component=\"web\"} AND (message:\"database\" OR message:\"sqlite\" OR message:\"public-db\" OR message:\"prisma\")", "refId": "A" }],
+          "options": { "showTime": true, "showLabels": true, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true }
+        },
+        {
+          "id": 4,
+          "type": "logs",
+          "title": "Accountability — API Requests",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 19 },
+          "datasource": { "type": "victoriametrics-logs-datasource", "uid": "victoria-logs" },
+          "targets": [{ "expr": "_stream:{app=\"iran-accountability\",component=\"web\"} AND (message:\"GET\" OR message:\"POST\" OR message:\"/api/\")", "refId": "A" }],
+          "options": { "showTime": true, "showLabels": true, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true }
+        },
+        {
+          "id": 101,
+          "type": "row",
+          "title": "Memory Database",
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 27 }
+        },
+        {
+          "id": 5,
+          "type": "logs",
+          "title": "Accountability — Public DB Init & Reload",
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 28 },
+          "datasource": { "type": "victoriametrics-logs-datasource", "uid": "victoria-logs" },
+          "targets": [{ "expr": "_stream:{app=\"iran-accountability\",component=\"web\"} AND (message:\"public-db\" OR message:\"reload\")", "refId": "A" }],
+          "options": { "showTime": true, "showLabels": true, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true }
+        }
+      ],
+      "time": { "from": "now-1h", "to": "now" },
+      "refresh": "30s"
+    }
+{{- end }}
+{{- end }}
