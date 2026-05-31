@@ -30,7 +30,6 @@ export default function FALandingPage() {
     city: string;
     province: string | null;
   } | null>(null);
-
   const [selectedCluster, setSelectedCluster] = useState<CityCluster | null>(null);
   const [mapMode, setMapMode] = useState<MapMode>('content');
   const [inViewMapSection, setInViewMapSection] = useState(false);
@@ -47,29 +46,63 @@ export default function FALandingPage() {
     return () => observer.disconnect();
   }, []);
 
-  // Toggle Leaflet interactions when explore mode changes
+  // ====================================================================
+  // MapInteractionController — manages Leaflet interaction state
+  // ====================================================================
   useEffect(() => {
     const map = (window as any).__ACCOUNTABILITY_MAP__;
     if (!map) return;
 
     if (mapMode === 'explore') {
-      // Full interaction
+      // Full map interaction
       try { map.dragging?.enable?.(); } catch {}
       try { map.scrollWheelZoom?.enable?.(); } catch {}
       try { map.doubleClickZoom?.enable?.(); } catch {}
       try { map.boxZoom?.enable?.(); } catch {}
       try { map.keyboard?.enable?.(); } catch {}
       try { map.touchZoom?.enable?.(); } catch {}
+
+      // Lock body scroll
       document.body.style.overflow = 'hidden';
+
+      // Force Leaflet to recalculate tile positions after layout change
+      setTimeout(() => map.invalidateSize(), 150);
     } else {
-      // Limited interaction: disable scroll zoom so page scroll works
+      // Content mode: disable interactions that conflict with page scroll
       try { map.scrollWheelZoom?.disable?.(); } catch {}
+      try { map.doubleClickZoom?.disable?.(); } catch {}
+      try { map.boxZoom?.disable?.(); } catch {}
+      try { map.keyboard?.disable?.(); } catch {}
+      // dragging stays enabled for limited pan
+
+      // Restore body scroll
       document.body.style.overflow = '';
+
+      // Force recalculate
+      setTimeout(() => map.invalidateSize(), 150);
     }
+
     return () => {
       document.body.style.overflow = '';
     };
   }, [mapMode]);
+
+  // Invalidate Leaflet when entering map section
+  useEffect(() => {
+    if (!inViewMapSection) return;
+    const map = (window as any).__ACCOUNTABILITY_MAP__;
+    if (!map) return;
+    const timer = setTimeout(() => map.invalidateSize(), 100);
+    return () => clearTimeout(timer);
+  }, [inViewMapSection]);
+
+  // Invalidate when panel opens/closes (layout shift)
+  useEffect(() => {
+    const map = (window as any).__ACCOUNTABILITY_MAP__;
+    if (!map) return;
+    const timer = setTimeout(() => map.invalidateSize(), 200);
+    return () => clearTimeout(timer);
+  }, [selectedCity, selectedCluster]);
 
   const handleCityClick = useCallback(
     (cityName: string, province: string | null) => {
@@ -89,36 +122,49 @@ export default function FALandingPage() {
     setSelectedCluster(null);
   }, []);
 
-  // Visual mode: blur only outside the map section. Map section is always sharp.
-  const inMapSection = inViewMapSection;
+  const isExplore = mapMode === 'explore';
+  const inMap = inViewMapSection;
 
   return (
     <div className="relative min-h-screen">
-      {/* Fixed map layer — pointer-events auto when in map section */}
+      {/* ======================================================== */}
+      {/* Fixed map layer */}
+      {/* ======================================================== */}
       <div className="fixed inset-0 z-0">
         <div
           id="persistent-map"
-          className={`w-full h-full bg-[#111] ${inMapSection && mapMode === 'explore' ? 'map-interactive' : 'map-static'}`}
-          style={{ pointerEvents: inMapSection ? 'auto' : 'none' }}
+          className={`w-full h-full ${inMap && isExplore ? 'map-interactive' : 'map-static'}`}
+          style={{
+            pointerEvents: inMap ? 'auto' : 'none',
+            background: '#1a1a1a',
+          }}
         />
       </div>
 
-      {/* Fixed overlay between map and content */}
-      <div
-        className="fixed inset-0 z-[1]"
-        style={{
-          background: inMapSection ? 'rgba(0,0,0,0.05)' : 'rgba(0,0,0,0.55)',
-          backdropFilter: inMapSection ? 'blur(0px)' : 'blur(12px)',
-          WebkitBackdropFilter: inMapSection ? 'blur(0px)' : 'blur(12px)',
-          transition: 'all 500ms ease',
-          pointerEvents: 'none',
-        }}
-      />
+      {/* ======================================================== */}
+      {/* Overlay — COMPLETELY REMOVED from DOM in map section */}
+      {/* to prevent backdrop-filter compositing over Leaflet tiles */}
+      {/* ======================================================== */}
+      {!inMap && (
+        <div
+          className="fixed inset-0 z-[1]"
+          style={{
+            background: 'rgba(0,0,0,0.55)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            pointerEvents: 'none',
+          }}
+        />
+      )}
 
+      {/* ======================================================== */}
       {/* Sticky navigation */}
+      {/* ======================================================== */}
       <StickyHeader />
 
-      {/* City/cluster panel */}
+      {/* ======================================================== */}
+      {/* City/cluster slide-over panel */}
+      {/* ======================================================== */}
       {(selectedCity || selectedCluster) && (
         <CityPanel
           city={selectedCity?.city}
@@ -128,7 +174,9 @@ export default function FALandingPage() {
         />
       )}
 
-      {/* Scrollable content over map */}
+      {/* ======================================================== */}
+      {/* Scrollable content sections */}
+      {/* ======================================================== */}
       <div className="relative z-10">
         <HeroSection
           onCityClick={handleCityClick}
@@ -148,7 +196,9 @@ export default function FALandingPage() {
         <ContactSection />
       </div>
 
-      {/* Marker visibility */}
+      {/* ======================================================== */}
+      {/* Marker visibility CSS */}
+      {/* ======================================================== */}
       <style jsx global>{`
         .map-static .marker-container {
           opacity: 0.35;
