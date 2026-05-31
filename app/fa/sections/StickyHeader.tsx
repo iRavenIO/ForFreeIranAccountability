@@ -56,38 +56,48 @@ export default function StickyHeader() {
   );
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-[9999] bg-black/60 backdrop-blur-xl border-b border-white/5">
-      <nav className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-        <a
-          href="#hero-section"
-          onClick={(e) => handleClick(e, '#hero-section')}
-          className="text-white font-bold text-lg no-underline hover:text-[#a32525] transition-colors"
-        >
-          آرشیو پاسخگویی
-        </a>
+    <header className="fixed top-0 inset-x-0 z-[9999] flex items-center justify-between px-4 pt-3 pb-1 pointer-events-none">
+      {/* Brand — minimal, top-right */}
+      <div />
 
-        <div className="flex items-center gap-1">
-          {NAV_ITEMS.map((item) => {
+      {/* Center pill nav */}
+      <nav className="pointer-events-auto mx-auto">
+        <div className="inline-flex items-center gap-3 bg-black/40 backdrop-blur-xl border border-white/10 rounded-xl px-5 py-2.5 shadow-lg shadow-black/20">
+          {NAV_ITEMS.map((item, i) => {
             const sectionId = item.href.replace('#', '');
             const isActive = activeSection === sectionId;
             return (
-              <a
-                key={item.href}
-                href={item.href}
-                onClick={(e) => handleClick(e, item.href)}
-                className={`px-3 py-2 text-sm rounded-lg transition-all no-underline ${
-                  isActive
-                    ? 'text-[#8b1e1e] font-medium bg-[#8b1e1e]/10'
-                    : 'text-[#a0a0a0] hover:text-white hover:bg-white/5'
-                }`}
-                style={isActive ? { boxShadow: 'inset 0 -2px 0 #8b1e1e' } : undefined}
-              >
-                {item.label}
-              </a>
+              <span key={item.href} className="flex items-center gap-3">
+                {i > 0 && (
+                  <span className="w-px h-3 bg-white/10" />
+                )}
+                <a
+                  href={item.href}
+                  onClick={(e) => handleClick(e, item.href)}
+                  className={`text-xs no-underline transition-all whitespace-nowrap ${
+                    isActive
+                      ? 'text-[#8b1e1e] font-semibold'
+                      : 'text-[#a0a0a0] hover:text-white'
+                  }`}
+                >
+                  {item.label}
+                </a>
+              </span>
             );
           })}
         </div>
       </nav>
+
+      {/* Brand — minimal, right side */}
+      <div className="pointer-events-auto flex-shrink-0">
+        <a
+          href="#hero-section"
+          onClick={(e) => handleClick(e, '#hero-section')}
+          className="text-white/60 text-[11px] font-medium no-underline hover:text-white/90 transition-colors whitespace-nowrap"
+        >
+          آرشیو پاسخگویی
+        </a>
+      </div>
     </header>
   );
 }
