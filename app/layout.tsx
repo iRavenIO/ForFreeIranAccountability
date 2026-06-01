@@ -15,8 +15,9 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const publishAppData = process.env.PUBLISH_APP_DATA === 'true';
   return (
-    <html lang="fa" dir="rtl">
+    <html lang="fa" dir="rtl" data-publish={publishAppData ? 'true' : 'false'}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
