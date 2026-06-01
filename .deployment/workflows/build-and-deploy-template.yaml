@@ -3,6 +3,7 @@ kind: WorkflowTemplate
 metadata:
   name: iran-accountability-build-and-deploy-template
 spec:
+  serviceAccountName: iran-accountability-workflow-sa
   entrypoint: build-and-deploy-dag
   onExit: cleanup-workspace
   arguments:
