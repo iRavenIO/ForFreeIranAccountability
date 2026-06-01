@@ -3,3 +3,12 @@ kind: ServiceAccount
 metadata:
   name: iran-accountability-workflow-sa
   namespace: argo-workflows
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: iran-accountability-workflow-sa-token
+  namespace: argo-workflows
+  annotations:
+    kubernetes.io/service-account.name: iran-accountability-workflow-sa
+type: kubernetes.io/service-account-token

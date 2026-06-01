@@ -39,7 +39,7 @@ spec:
             cat version-values.yaml
 
             git config user.email "ci@voice.forfreeiran.com"
-            git config user.name "ForFreeIran CI"
+            git config user.name "BeIranVoice CI"
             git add version-values.yaml
             git commit -m "Deploy version $DOCKER_TAG to Harbor"
             git push -f origin {{inputs.parameters.branch}} || { echo "Failed to push to repository"; exit 1; }

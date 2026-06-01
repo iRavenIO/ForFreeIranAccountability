@@ -134,17 +134,43 @@ spec:
                                     docker info >/dev/null 2>&1 && break
                                   done
                                   docker info >/dev/null || { echo "ERROR: dockerd never became ready"; exit 1; }
+                                  echo "$HARBOR_PASSWORD" | docker login harbor-registry.tail02a6d.ts.net -u "$HARBOR_USERNAME" --password-stdin
+                                  echo "$DOCKERHUB_PASSWORD" | docker login docker.io -u "$DOCKERHUB_USERNAME" --password-stdin
                                   cd /workspace/source
                                   DOCKER_TAG="{{workflow.parameters.docker-tag}}"
                                   DOCKER_TAG=$(echo "$DOCKER_TAG" | sed 's|refs/tags/||; s|refs/heads/||')
-                                  docker build --pull --no-cache \
-                                    --build-arg NEXT_PUBLIC_SITE_URL="https://accountability.forfreeiran.com" \
+                                  docker build --no-cache \
+                                    --build-arg ADMIN_BUILDER_IMAGE="node:20-alpine" \
+                                    --build-arg ADMIN_RUNNER_IMAGE="node:20-slim" \
+                                    --build-arg NEXT_PUBLIC_SUPABASE_URL="https://iran-platform.forfreeiran.com" \
+                                    --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYW4tcGxhdGZvcm0iLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc3NTg5NTE3OSwiZXhwIjoyMDkxMjU1MTc5fQ.Yy_oOSTh1bWFwMG5_e15tUu4Fj6lTjUD_PnmgFap4hU" \
+                                    --build-arg NEXT_PUBLIC_TURNSTILE_SITE_KEY="0x4AAAAAACWcQFkfyzkA-r68" \
                                     --build-arg APP_VERSION="$DOCKER_TAG" \
                                     -t iran-accountability:${DOCKER_TAG} .
                                   docker save iran-accountability:${DOCKER_TAG} -o /workspace/iran-accountability-arm64.tar
                               env:
                                 - name: DOCKER_TLS_CERTDIR
                                   value: ""
+                                - name: HARBOR_USERNAME
+                                  valueFrom:
+                                    secretKeyRef:
+                                      name: harbor-credentials
+                                      key: username
+                                - name: HARBOR_PASSWORD
+                                  valueFrom:
+                                    secretKeyRef:
+                                      name: harbor-credentials
+                                      key: password
+                                - name: DOCKERHUB_USERNAME
+                                  valueFrom:
+                                    secretKeyRef:
+                                      name: docker-hub-credentials
+                                      key: username
+                                - name: DOCKERHUB_PASSWORD
+                                  valueFrom:
+                                    secretKeyRef:
+                                      name: docker-hub-credentials
+                                      key: password
                               securityContext:
                                 privileged: true
                               volumeMounts:
@@ -271,17 +297,12 @@ spec:
     - name: cleanup-workspace
       steps:
         - - name: cleanup-workspace-arm64
-            templateRef:
-              name: remote-pi-job-execute
-              template: dispatch
+            templateRef: { name: remote-pi-job-execute, template: dispatch }
             arguments:
               parameters:
-                - name: job-namespace
-                  value: "argo-workflows"
-                - name: workspace-pvc-name
-                  value: "{{workflow.name}}-pi-arm64-workspace"
-                - name: workspace-pvc-size
-                  value: "6Gi"
+                - { name: job-namespace, value: "argo-workflows" }
+                - { name: workspace-pvc-name, value: "{{workflow.name}}-pi-arm64-workspace" }
+                - { name: workspace-pvc-size, value: "6Gi" }
                 - name: job-manifest
                   value: |
                     apiVersion: batch/v1
@@ -311,5 +332,4 @@ spec:
                           volumes:
                             - name: workspace
                               persistentVolumeClaim: { claimName: {{workflow.name}}-pi-arm64-workspace }
-                - name: timeout-seconds
-                  value: "900"
+                - { name: timeout-seconds, value: "900" }

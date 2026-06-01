@@ -1,0 +1,216 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: iran-accountability-build-template
+spec:
+  templates:
+    # ----------------------------------------------------------------------
+    # build-image: parameterized per-platform build.
+    # Runs one platform per pod so two pods can execute in parallel as
+    # separate DAG nodes (build-image-amd64 || build-image-arm64) without
+    # starving the k3s-master single-node control plane the way the
+    # earlier --platform amd64,arm64 in one pod did.
+    # ----------------------------------------------------------------------
+    - name: build-image
+      retryStrategy:
+        limit: 1
+      inputs:
+        parameters:
+          - name: docker-tag
+          - name: arch
+      container:
+        image: harbor-registry.tail02a6d.ts.net/library/docker:20.10.16-dind
+        command: ["sh", "-c"]
+        args:
+          - |
+            echo "192.168.2.30 harbor-registry.tail02a6d.ts.net" >> /etc/hosts
+            echo "192.168.2.30 harbor.tail02a6d.ts.net" >> /etc/hosts
+            iptables -t nat -A OUTPUT -p tcp -d 192.168.2.30 --dport 443 -j DNAT --to-destination 192.168.2.30:30443 || true
+            mkdir -p /etc/docker && echo '{"insecure-registries":["harbor-registry.tail02a6d.ts.net","harbor.tail02a6d.ts.net"],"mtu":1400}' > /etc/docker/daemon.json
+            dockerd-entrypoint.sh &
+            echo "Waiting for Docker daemon to start..."
+            for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+              sleep 2
+              docker info >/dev/null 2>&1 && { echo "dockerd ready after $((i*2))s"; break; }
+            done
+            docker info >/dev/null || { echo "ERROR: dockerd never became ready"; exit 1; }
+
+            cd /workspace/source || { echo "Failed to change to workspace directory"; exit 1; }
+
+            DOCKER_TAG="{{inputs.parameters.docker-tag}}"
+            DOCKER_TAG=$(echo "$DOCKER_TAG" | sed 's|refs/tags/||')
+            ARCH="{{inputs.parameters.arch}}"
+
+            REGISTRY="harbor-registry.tail02a6d.ts.net"
+            IMAGE="${REGISTRY}/application-images/iran-accountability"
+
+            echo "=== Per-Platform Build ==="
+            echo "Image    : ${IMAGE}"
+            echo "Tag      : ${DOCKER_TAG}"
+            echo "Platform : linux/${ARCH}"
+            echo "=========================="
+
+            if [ ! -f Dockerfile ]; then
+              echo "ERROR: Dockerfile not found in workspace"
+              exit 1
+            fi
+            head -5 Dockerfile
+
+            # QEMU only needed if we're cross-building (arch != host arch).
+            # Host arch is amd64 (k3s-master node). Skip binfmt install for
+            # native amd64 builds; install only for arm64 cross builds.
+            if [ "$ARCH" = "arm64" ]; then
+              echo "Installing QEMU binfmt handlers for arm64..."
+              docker run --privileged --rm tonistiigi/binfmt:qemu-v7.0.0 --install arm64 || {
+                echo "ERROR: failed to install binfmt"; exit 1; }
+            fi
+
+            echo "Bootstrapping buildx builder..."
+            docker buildx create --name iran-multiarch --driver docker-container --use --bootstrap 2>/dev/null || \
+              docker buildx use iran-multiarch
+            docker buildx inspect --bootstrap
+
+            echo "Logging in to Harbor..."
+            echo "$HARBOR_PASSWORD" | docker login $REGISTRY -u $HARBOR_USERNAME --password-stdin || {
+              echo "ERROR: failed to login to Harbor"; exit 1; }
+
+            echo "Building linux/${ARCH} (single-platform pod)..."
+            docker buildx build \
+              --platform "linux/${ARCH}" \
+              --no-cache \
+              --pull \
+              --progress=plain \
+              --build-arg NEXT_PUBLIC_SUPABASE_URL="${NEXT_PUBLIC_SUPABASE_URL}" \
+              --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY="${NEXT_PUBLIC_SUPABASE_ANON_KEY}" \
+              --build-arg NEXT_PUBLIC_TURNSTILE_SITE_KEY="${NEXT_PUBLIC_TURNSTILE_SITE_KEY}" \
+              --build-arg APP_VERSION="$DOCKER_TAG" \
+              --label "build.timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+              --label "build.commit=${DOCKER_TAG}" \
+              --label "build.project=iran-accountability" \
+              -t "${IMAGE}:${DOCKER_TAG}-${ARCH}" \
+              --push \
+              . || { echo "ERROR: buildx ${ARCH} build/push failed"; exit 1; }
+
+            echo "SUCCESS: ${IMAGE}:${DOCKER_TAG}-${ARCH} pushed"
+
+        env:
+          - name: DOCKER_TLS_CERTDIR
+            value: ""
+          - name: HARBOR_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: harbor-credentials
+                key: username
+          - name: HARBOR_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: harbor-credentials
+                key: password
+          - name: DOCKER_BUILDKIT
+            value: "0"
+          # Supabase + Turnstile bake (self-hosted iran-platform target)
+          # NEXT_PUBLIC_* are inlined into client chunks at next build time;
+          # this MUST point at the cutover destination so Accountability's browser code
+          # talks to iran-platform after the Vault bundle flip.
+          - name: NEXT_PUBLIC_SUPABASE_URL
+            value: "https://iran-platform.forfreeiran.com"
+          - name: NEXT_PUBLIC_SUPABASE_ANON_KEY
+            value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYW4tcGxhdGZvcm0iLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc3NTg5NTE3OSwiZXhwIjoyMDkxMjU1MTc5fQ.Yy_oOSTh1bWFwMG5_e15tUu4Fj6lTjUD_PnmgFap4hU"
+          - name: NEXT_PUBLIC_TURNSTILE_SITE_KEY
+            value: "0x4AAAAAACWcQFkfyzkA-r68"
+        securityContext:
+          privileged: true
+        volumeMounts:
+          - name: workspace
+            mountPath: /workspace
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1500m"
+
+    # ----------------------------------------------------------------------
+    # create-manifest-list: combine the per-arch tags into an OCI manifest
+    # list AFTER both per-arch builds finish. Has its own retry policy so
+    # transient Harbor 502s during the manifest commit don't fail the whole
+    # workflow.
+    # ----------------------------------------------------------------------
+    - name: create-manifest-list
+      retryStrategy:
+        limit: 5
+        retryPolicy: Always
+        backoff:
+          duration: "30s"
+          factor: 2
+      inputs:
+        parameters:
+          - name: docker-tag
+      container:
+        image: harbor-registry.tail02a6d.ts.net/library/docker:20.10.16-dind
+        command: ["sh", "-c"]
+        args:
+          - |
+            echo "192.168.2.30 harbor-registry.tail02a6d.ts.net" >> /etc/hosts
+            echo "192.168.2.30 harbor.tail02a6d.ts.net" >> /etc/hosts
+            iptables -t nat -A OUTPUT -p tcp -d 192.168.2.30 --dport 443 -j DNAT --to-destination 192.168.2.30:30443 || true
+            mkdir -p /etc/docker && echo '{"insecure-registries":["harbor-registry.tail02a6d.ts.net","harbor.tail02a6d.ts.net"],"mtu":1400}' > /etc/docker/daemon.json
+            dockerd-entrypoint.sh &
+            for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+              sleep 2
+              docker info >/dev/null 2>&1 && { echo "dockerd ready after $((i*2))s"; break; }
+            done
+            docker info >/dev/null || { echo "ERROR: dockerd never became ready"; exit 1; }
+
+            DOCKER_TAG="{{inputs.parameters.docker-tag}}"
+            DOCKER_TAG=$(echo "$DOCKER_TAG" | sed 's|refs/tags/||')
+
+            REGISTRY="harbor-registry.tail02a6d.ts.net"
+            IMAGE="${REGISTRY}/application-images/iran-accountability"
+
+            echo "=== Manifest list create ==="
+            echo "Image  : ${IMAGE}"
+            echo "Tag    : ${DOCKER_TAG}"
+            echo "Sources:"
+            echo "  - ${IMAGE}:${DOCKER_TAG}-amd64"
+            echo "  - ${IMAGE}:${DOCKER_TAG}-arm64"
+            echo "============================"
+
+            echo "Logging in to Harbor..."
+            echo "$HARBOR_PASSWORD" | docker login $REGISTRY -u $HARBOR_USERNAME --password-stdin || {
+              echo "ERROR: failed to login to Harbor"; exit 1; }
+
+            echo "Combining per-arch tags into manifest list..."
+            docker buildx imagetools create \
+              -t "${IMAGE}:${DOCKER_TAG}" \
+              -t "${IMAGE}:latest" \
+              "${IMAGE}:${DOCKER_TAG}-amd64" \
+              "${IMAGE}:${DOCKER_TAG}-arm64" || {
+              echo "ERROR: imagetools create failed"; exit 1; }
+
+            echo "SUCCESS: manifest list pushed"
+            docker buildx imagetools inspect "${IMAGE}:${DOCKER_TAG}" || true
+
+        env:
+          - name: DOCKER_TLS_CERTDIR
+            value: ""
+          - name: HARBOR_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: harbor-credentials
+                key: username
+          - name: HARBOR_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: harbor-credentials
+                key: password
+        securityContext:
+          privileged: true
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "768Mi"
+            cpu: "500m"
