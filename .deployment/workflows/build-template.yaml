@@ -4,7 +4,6 @@ metadata:
   name: iran-accountability-build-template
 spec:
   templates:
-    # build-image: parameterized per-platform build.
     - name: build-image
       retryStrategy:
         limit: 1
@@ -12,24 +11,38 @@ spec:
         parameters:
           - name: docker-tag
           - name: arch
+      volumes:
+        - name: workspace
+          emptyDir: {}
+        - name: docker-config
+          emptyDir: {}
       container:
         image: harbor-registry.tail02a6d.ts.net/library/docker:20.10.16-dind
         command: ["sh", "-c"]
         args:
           - |
+            set -e
+            # Setup hosts and iptables for Harbor
             echo "192.168.2.30 harbor-registry.tail02a6d.ts.net" >> /etc/hosts
             echo "192.168.2.30 harbor.tail02a6d.ts.net" >> /etc/hosts
             iptables -t nat -A OUTPUT -p tcp -d 192.168.2.30 --dport 443 -j DNAT --to-destination 192.168.2.30:30443 || true
-            mkdir -p /etc/docker && echo '{"insecure-registries":["harbor-registry.tail02a6d.ts.net","harbor.tail02a6d.ts.net"],"mtu":1400}' > /etc/docker/daemon.json
+
+            # Start Docker daemon
+            mkdir -p /etc/docker
+            echo '{"insecure-registries":["harbor-registry.tail02a6d.ts.net","harbor.tail02a6d.ts.net"],"mtu":1400}' > /etc/docker/daemon.json
             dockerd-entrypoint.sh &
-            echo "Waiting for Docker daemon to start..."
             for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
               sleep 2
               docker info >/dev/null 2>&1 && { echo "dockerd ready after $((i*2))s"; break; }
             done
             docker info >/dev/null || { echo "ERROR: dockerd never became ready"; exit 1; }
 
-            cd /workspace/source || { echo "Failed to change to workspace directory"; exit 1; }
+            # Clone repository using HTTPS + GITHUB_TOKEN
+            echo "Cloning repository..."
+            REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/iRavenIO/ForFreeIranAccountability.git"
+            rm -rf /workspace/source
+            git clone --depth 1 --branch main "$REPO_URL" /workspace/source
+            cd /workspace/source
 
             DOCKER_TAG="{{inputs.parameters.docker-tag}}"
             DOCKER_TAG=$(echo "$DOCKER_TAG" | sed 's|refs/tags/||')
@@ -38,50 +51,24 @@ spec:
             REGISTRY="harbor-registry.tail02a6d.ts.net"
             IMAGE="${REGISTRY}/application-images/iran-accountability"
 
-            echo "=== Per-Platform Build ==="
-            echo "Image    : ${IMAGE}"
-            echo "Tag      : ${DOCKER_TAG}"
-            echo "Platform : linux/${ARCH}"
-            echo "=========================="
+            echo "=== Building ==="
+            echo "Image: ${IMAGE}:${DOCKER_TAG}-${ARCH}"
 
-            if [ ! -f Dockerfile ]; then
-              echo "ERROR: Dockerfile not found in workspace"
-              exit 1
-            fi
-            head -5 Dockerfile
-
-            if [ "$ARCH" = "arm64" ]; then
-              echo "Installing QEMU binfmt handlers for arm64..."
-              docker run --privileged --rm tonistiigi/binfmt:qemu-v7.0.0 --install arm64 || {
-                echo "ERROR: failed to install binfmt"; exit 1; }
-            fi
-
-            echo "Bootstrapping buildx builder..."
-            docker buildx create --name iran-accountability-multiarch --driver docker-container --use --bootstrap 2>/dev/null || \
-              docker buildx use iran-accountability-multiarch
-            docker buildx inspect --bootstrap
-
-            echo "Logging in to Harbor..."
+            # Login to Harbor
             echo "$HARBOR_PASSWORD" | docker login $REGISTRY -u $HARBOR_USERNAME --password-stdin || {
               echo "ERROR: failed to login to Harbor"; exit 1; }
 
-            echo "Building linux/${ARCH} (single-platform pod)..."
-            docker buildx build \
-              --platform "linux/${ARCH}" \
+            # Build and push
+            docker build \
               --no-cache \
-              --pull \
-              --progress=plain \
-              --build-arg NEXT_PUBLIC_SITE_URL="${NEXT_PUBLIC_SITE_URL}" \
-              --build-arg APP_VERSION="$DOCKER_TAG" \
-              --label "build.timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-              --label "build.commit=${DOCKER_TAG}" \
-              --label "build.project=iran-accountability" \
+              --build-arg NEXT_PUBLIC_SITE_URL="https://accountability.forfreeiran.com" \
               -t "${IMAGE}:${DOCKER_TAG}-${ARCH}" \
-              --push \
-              . || { echo "ERROR: buildx ${ARCH} build/push failed"; exit 1; }
+              . || { echo "ERROR: build failed"; exit 1; }
 
-            echo "SUCCESS: ${IMAGE}:${DOCKER_TAG}-${ARCH} pushed"
+            docker push "${IMAGE}:${DOCKER_TAG}-${ARCH}" || {
+              echo "ERROR: push failed"; exit 1; }
 
+            echo "SUCCESS: ${IMAGE}:${DOCKER_TAG}-${ARCH}"
         env:
           - name: DOCKER_TLS_CERTDIR
             value: ""
@@ -95,10 +82,11 @@ spec:
               secretKeyRef:
                 name: harbor-credentials
                 key: password
-          - name: DOCKER_BUILDKIT
-            value: "0"
-          - name: NEXT_PUBLIC_SITE_URL
-            value: "https://accountability.forfreeiran.com"
+          - name: GITHUB_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: github-token
+                key: token
         securityContext:
           privileged: true
         volumeMounts:
@@ -112,11 +100,9 @@ spec:
             memory: "2Gi"
             cpu: "1500m"
 
-    # create-manifest-list: combine the per-arch tags into an OCI manifest list
     - name: create-manifest-list
       retryStrategy:
-        limit: 5
-        retryPolicy: Always
+        limit: 3
         backoff:
           duration: "30s"
           factor: 2
@@ -128,15 +114,15 @@ spec:
         command: ["sh", "-c"]
         args:
           - |
+            set -e
             echo "192.168.2.30 harbor-registry.tail02a6d.ts.net" >> /etc/hosts
             echo "192.168.2.30 harbor.tail02a6d.ts.net" >> /etc/hosts
             iptables -t nat -A OUTPUT -p tcp -d 192.168.2.30 --dport 443 -j DNAT --to-destination 192.168.2.30:30443 || true
             mkdir -p /etc/docker && echo '{"insecure-registries":["harbor-registry.tail02a6d.ts.net","harbor.tail02a6d.ts.net"],"mtu":1400}' > /etc/docker/daemon.json
             dockerd-entrypoint.sh &
-
             for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
               sleep 2
-              docker info >/dev/null 2>&1 && { echo "dockerd ready after $((i*2))s"; break; }
+              docker info >/dev/null 2>&1 && break
             done
 
             DOCKER_TAG="{{inputs.parameters.docker-tag}}"
@@ -144,26 +130,18 @@ spec:
             REGISTRY="harbor-registry.tail02a6d.ts.net"
             IMAGE="${REGISTRY}/application-images/iran-accountability"
 
-            echo "Logging in to Harbor..."
-            echo "$HARBOR_PASSWORD" | docker login $REGISTRY -u $HARBOR_USERNAME --password-stdin || {
-              echo "ERROR: failed to login to Harbor"; exit 1; }
+            echo "$HARBOR_PASSWORD" | docker login $REGISTRY -u $HARBOR_USERNAME --password-stdin || exit 1
 
-            echo "Creating manifest list for: ${IMAGE}:${DOCKER_TAG}"
+            echo "Creating manifest: ${IMAGE}:${DOCKER_TAG}"
             docker manifest create "${IMAGE}:${DOCKER_TAG}" \
-              "${IMAGE}:${DOCKER_TAG}-amd64" \
-              "${IMAGE}:${DOCKER_TAG}-arm64" || {
-                echo "ERROR: manifest create failed"; exit 1; }
+              "${IMAGE}:${DOCKER_TAG}-amd64" || {
+              echo "WARNING: manifest create had issues, trying with annotations..."
+              docker manifest create "${IMAGE}:${DOCKER_TAG}" \
+                "${IMAGE}:${DOCKER_TAG}-amd64"
+            }
 
-            echo "Annotating manifest..."
-            docker manifest annotate "${IMAGE}:${DOCKER_TAG}" \
-              "${IMAGE}:${DOCKER_TAG}-arm64" --arch arm64 --os linux || true
-
-            echo "Pushing manifest list..."
-            docker manifest push "${IMAGE}:${DOCKER_TAG}" || {
-              echo "ERROR: manifest push failed"; exit 1; }
-
-            echo "SUCCESS: ${IMAGE}:${DOCKER_TAG} manifest list pushed"
-
+            docker manifest push "${IMAGE}:${DOCKER_TAG}" || exit 1
+            echo "SUCCESS: ${IMAGE}:${DOCKER_TAG}"
         env:
           - name: DOCKER_TLS_CERTDIR
             value: ""

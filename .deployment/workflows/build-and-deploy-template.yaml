@@ -17,21 +17,7 @@ spec:
     - name: build-and-deploy-dag
       dag:
         tasks:
-          - name: clone-repo
-            templateRef:
-              name: iran-accountability-clone-template
-              template: clone
-            arguments:
-              parameters:
-                - name: repository
-                  value: "{{workflow.parameters.repository}}"
-                - name: branch
-                  value: "{{workflow.parameters.branch}}"
-                - name: commit
-                  value: "{{workflow.parameters.commit}}"
-
           - name: build-amd64
-            depends: clone-repo
             templateRef:
               name: iran-accountability-build-template
               template: build-image
@@ -42,20 +28,8 @@ spec:
                 - name: arch
                   value: amd64
 
-          - name: build-arm64
-            depends: clone-repo
-            templateRef:
-              name: iran-accountability-build-template
-              template: build-image
-            arguments:
-              parameters:
-                - name: docker-tag
-                  value: "{{workflow.parameters.docker-tag}}"
-                - name: arch
-                  value: arm64
-
           - name: create-manifest
-            depends: build-amd64 && build-arm64
+            depends: build-amd64
             templateRef:
               name: iran-accountability-build-template
               template: create-manifest-list
@@ -77,36 +51,3 @@ spec:
                   value: "{{workflow.parameters.repository}}"
                 - name: branch
                   value: "{{workflow.parameters.branch}}"
-
-          - name: deploy-ha00
-            depends: update-version
-            template: deploy-argocd
-            arguments:
-              parameters:
-                - name: cluster
-                  value: k3s-ha00
-                - name: namespace
-                  value: "{{workflow.parameters.namespace}}"
-
-    - name: deploy-argocd
-      inputs:
-        parameters:
-          - name: cluster
-          - name: namespace
-      container:
-        image: alpine/curl:latest
-        command: [sh, -c]
-        args:
-          - |
-            echo "Syncing ArgoCD app: iran-accountability on {{inputs.parameters.cluster}}"
-            ARGOCD_SERVER="argocd-server.argo-cd.svc.cluster.local:443"
-            curl -s -X POST "https://${ARGOCD_SERVER}/api/v1/applications/iran-accountability/sync" \
-              -H "Authorization: Bearer ${ARGOCD_TOKEN}" \
-              -H "Content-Type: application/json" \
-              -d '{"revision":"main","prune":false}' || echo "Sync triggered via ArgoCD"
-        env:
-          - name: ARGOCD_TOKEN
-            valueFrom:
-              secretKeyRef:
-                name: argocd-token
-                key: token
