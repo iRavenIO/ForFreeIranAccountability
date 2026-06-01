@@ -10,13 +10,18 @@ spec:
       - name: repository
         value: "git@github.com:iRavenIO/ForFreeIranAccountability.git"
       - name: branch
-        value: main
+        value: "main"
       - name: commit
         value: ""
       - name: docker-tag
-        value: latest
+        value: "latest"
       - name: namespace
-        value: iran
+        value: "iran-accountability"
+      - name: harbor-registry
+        value: "harbor-registry.tail02a6d.ts.net"
+      - name: harbor-project
+        value: "application-images"
+
   templates:
     - name: build-and-deploy-dag
       dag:
@@ -28,7 +33,7 @@ spec:
             arguments:
               parameters:
                 - name: job-namespace
-                  value: argo-workflows
+                  value: "argo-workflows"
                 - name: workspace-pvc-name
                   value: "{{workflow.name}}-pi-arm64-workspace"
                 - name: workspace-pvc-size
@@ -93,7 +98,7 @@ spec:
             arguments:
               parameters:
                 - name: job-namespace
-                  value: argo-workflows
+                  value: "argo-workflows"
                 - name: workspace-pvc-name
                   value: "{{workflow.name}}-pi-arm64-workspace"
                 - name: workspace-pvc-size
@@ -169,7 +174,7 @@ spec:
             arguments:
               parameters:
                 - name: job-namespace
-                  value: argo-workflows
+                  value: "argo-workflows"
                 - name: workspace-pvc-name
                   value: "{{workflow.name}}-pi-arm64-workspace"
                 - name: workspace-pvc-size
@@ -247,10 +252,10 @@ spec:
             retryStrategy:
               limit: 1
 
-          - name: update-version
+          - name: update-version-file
             templateRef:
               name: iran-accountability-git-template
-              template: update-version
+              template: update-version-and-push
             dependencies: ["push-image-arm64"]
             arguments:
               parameters:
@@ -272,7 +277,7 @@ spec:
             arguments:
               parameters:
                 - name: job-namespace
-                  value: argo-workflows
+                  value: "argo-workflows"
                 - name: workspace-pvc-name
                   value: "{{workflow.name}}-pi-arm64-workspace"
                 - name: workspace-pvc-size

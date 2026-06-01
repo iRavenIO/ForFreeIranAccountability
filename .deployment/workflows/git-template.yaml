@@ -4,7 +4,7 @@ metadata:
   name: iran-accountability-git-template
 spec:
   templates:
-    - name: update-version
+    - name: update-version-and-push
       retryStrategy:
         limit: 3
         backoff:
