@@ -4,7 +4,7 @@ import '@/styles/globals.css';
 export const metadata: Metadata = {
   title: 'آرشیو پاسخگویی | حزب مشروطه ایران',
   description: 'پایگاه داده اسامی و مکان‌ها - مستندسازی برای پاسخگویی. حزب مشروطه ایران (لیبرال دموکرات).',
-  metadataBase: new URL('https://accountability.forfreeiran.com'),
+  metadataBase: new URL('https://irancpi.net'),
   openGraph: {
     title: 'آرشیو پاسخگویی — حزب مشروطه ایران',
     description: 'Documenting records for accountability and transparency.',

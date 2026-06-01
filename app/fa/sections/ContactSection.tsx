@@ -24,10 +24,10 @@ export default function ContactSection() {
                   <polyline points="22,6 12,13 2,6" />
                 </svg>
                 <a
-                  href="mailto:info@forfreeiran.com"
+                  href="mailto:info@irancpi.net"
                   className="text-[#8b1e1e] hover:text-[#a32525] no-underline text-sm transition-colors"
                 >
-                  info@forfreeiran.com
+                  info@irancpi.net
                 </a>
               </div>
               <div className="flex items-center gap-3">
@@ -63,10 +63,10 @@ export default function ContactSection() {
             <img src="/logo.png" alt="For Free Iran" className="h-12 mx-auto mb-2" />
             <p className="text-white font-semibold text-sm">حزب مشروطه ایران (لیبرال دموکرات)</p>
             <p className="text-[#6b6b6b] text-sm mt-1" dir="ltr">
-              accountability.forfreeiran.com
+              irancpi.net
             </p>
             <p className="text-[#6b6b6b] text-xs mt-0.5" dir="ltr">
-              info@forfreeiran.com
+              info@irancpi.net
             </p>
           </div>
         </div>

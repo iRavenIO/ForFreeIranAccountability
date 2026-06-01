@@ -2,8 +2,8 @@ export const APP_NAME = 'آرشیو پاسخگویی';
 export const APP_NAME_EN = 'Accountability Archive';
 export const APP_OWNER = 'حزب مشروطه ایران (لیبرال دموکرات)';
 export const APP_OWNER_EN = 'Constitutionalist Party of Iran (Liberal Democrat)';
-export const APP_DOMAIN = 'accountability.forfreeiran.com';
-export const APP_CONTACT_EMAIL = 'info@forfreeiran.com';
+export const APP_DOMAIN = 'irancpi.net';
+export const APP_CONTACT_EMAIL = 'info@irancpi.net';
 export const APP_TAGLINE = 'مستندسازی داده‌های مکانی، اسامی بررسی‌شده و سوابق عمومی';
 
 export const MAP_TILE_CONFIG = {

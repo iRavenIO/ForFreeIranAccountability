@@ -111,7 +111,7 @@ export default function HeroSection({ onCityClick, onClusterClick }: Props) {
       }).addTo(map);
 
       L.control.attribution({
-        prefix: '<a href="https://accountability.forfreeiran.com" style="color:#6b6b6b;font-size:10px">Accountability Archive</a>',
+        prefix: '<a href="https://irancpi.net" style="color:#6b6b6b;font-size:10px">حزب مشروطه ایران</a>',
         position: 'bottomleft',
       }).addTo(map);
 
