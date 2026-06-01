@@ -46,8 +46,8 @@ RUN mkdir -p /app/data && chown -R nextjs:nodejs /app/data
 COPY --chown=nextjs:nodejs <<'EOF' /app/start.sh
 #!/bin/sh
 set -e
-DB_URL="file:${DATABASE_PATH:-/app/data/accountability.db}"
-DATABASE_URL="$DB_URL" npx prisma db push --skip-generate --accept-data-loss
+export DATABASE_URL="file:${DATABASE_PATH:-/app/data/accountability.db}"
+npx prisma db push --skip-generate --accept-data-loss
 exec node server.js
 EOF
 RUN chmod +x /app/start.sh
