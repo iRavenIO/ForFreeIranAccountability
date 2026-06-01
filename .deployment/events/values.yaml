@@ -1,5 +1,5 @@
 name: iran-accountability
 namespace: argo-events
 repository: iRavenIO/ForFreeIranAccountability
-branch: main
+branch: master
 webhook: iran-accountability/8b7e3a2d1c5f0a9d6e4b7c8f9a012345678901234567890abcdef0123456789
