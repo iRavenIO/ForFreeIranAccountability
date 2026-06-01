@@ -11,6 +11,7 @@ spec:
           - name: branch
             default: main
           - name: commit
+            default: ""
       volumes:
         - name: workspace
           emptyDir: {}
@@ -19,18 +20,26 @@ spec:
           - name: source
             path: /workspace/source
       container:
-        image: alpine/git:latest
+        image: harbor-registry.tail02a6d.ts.net/library/alpine-ci:3.18
         command: [sh, -c]
         args:
           - |
-            git clone --depth 1 --branch {{inputs.parameters.branch}} {{inputs.parameters.repository}} /workspace/source
+            REPO_URL=$(echo "{{inputs.parameters.repository}}" | sed 's|git@github.com:|https://x-access-token:'"${GITHUB_TOKEN}"'@github.com/|')
+            echo "Cloning $REPO_URL (branch: {{inputs.parameters.branch}})"
+            rm -rf /workspace/source
+            git clone --depth 1 --branch "{{inputs.parameters.branch}}" "$REPO_URL" /workspace/source
             cd /workspace/source
-            if [ -n "{{inputs.parameters.commit}}" ] && [ "{{inputs.parameters.commit}}" != "{{"{{$}}"}}" ]; then
-              git fetch origin {{inputs.parameters.commit}}
-              git checkout {{inputs.parameters.commit}}
+            if [ -n "{{inputs.parameters.commit}}" ]; then
+              git fetch origin "{{inputs.parameters.commit}}"
+              git checkout "{{inputs.parameters.commit}}"
             fi
-            echo "Repository cloned successfully"
-            git log --oneline -3
+            echo "Clone OK"
+        env:
+          - name: GITHUB_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: github-token
+                key: token
         volumeMounts:
           - name: workspace
             mountPath: /workspace
