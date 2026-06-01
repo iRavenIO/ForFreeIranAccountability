@@ -5,54 +5,48 @@ metadata:
 spec:
   templates:
     - name: update-version
+      retryStrategy:
+        limit: 3
+        backoff:
+          duration: "10s"
+          factor: 2
       inputs:
         parameters:
           - name: docker-tag
-          - name: git-email
-            default: "ci@iraven.io"
-          - name: git-name
-            default: "CI Bot"
-      volumes:
-        - name: workspace
-          emptyDir: {}
+          - name: repository
+          - name: branch
       container:
-        image: alpine/git:latest
-        command: [sh, -c]
+        image: harbor-registry.tail02a6d.ts.net/library/alpine-ci:3.18
+        command: ["/bin/sh", "-c"]
         args:
           - |
-            TAG="{{inputs.parameters.docker-tag}}"
-            TAG=$(echo "$TAG" | sed 's|refs/tags/||')
+            SSH_REPO="{{inputs.parameters.repository}}"
+            REPO_URL=$(echo "$SSH_REPO" | sed 's|git@github.com:|https://x-access-token:'"${GITHUB_TOKEN}"'@github.com/|')
+            git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "git@github.com:"
 
-            git clone --depth 1 --branch main git@github.com:iRavenIO/ForFreeIranAccountability.git /workspace/repo
-            cd /workspace/repo
+            echo "Cloning repository for version update..."
+            rm -rf /tmp/repo
+            git clone "$REPO_URL" /tmp/repo || { echo "Failed to clone repository"; exit 1; }
+            cd /tmp/repo || { echo "Failed to change to cloned repository"; exit 1; }
 
-            git config user.email "{{inputs.parameters.git-email}}"
-            git config user.name "{{inputs.parameters.git-name}}"
+            DOCKER_TAG="{{inputs.parameters.docker-tag}}"
+            DOCKER_TAG=$(echo "$DOCKER_TAG" | sed 's|refs/tags/||; s|refs/heads/||')
 
-            echo "Updating version to: ${TAG}"
-            cat > .deployment/accountability/version-values.yaml << EOF
-          # This file is automatically updated by CI/CD pipeline
-          # Do not edit manually
-          image:
-            tag: "${TAG}"
-          EOF
+            echo "Updating version-values.yaml with tag: $DOCKER_TAG"
+            cd .deployment/accountability || { echo "Failed to change to .deployment/accountability directory"; exit 1; }
+            sed -i "s/tag: \".*\"/tag: \"$DOCKER_TAG\"/" version-values.yaml
+            echo "Updated version-values.yaml content:"
+            cat version-values.yaml
 
-            git add .deployment/accountability/version-values.yaml
-            git diff --cached --quiet || {
-              git commit -m "ci: update version to ${TAG} [skip ci]"
-              git push origin main
-              echo "Version updated to ${TAG}"
-            }
-        volumeMounts:
-          - name: workspace
-            mountPath: /workspace
+            git config user.email "ci@voice.forfreeiran.com"
+            git config user.name "ForFreeIran CI"
+            git add version-values.yaml
+            git commit -m "Deploy version $DOCKER_TAG to Harbor"
+            git push -f origin {{inputs.parameters.branch }} || { echo "Failed to push to repository"; exit 1; }
+            echo "Successfully updated and pushed version $DOCKER_TAG"
         env:
-          - name: GIT_SSH_COMMAND
-            value: "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
-        resources:
-          requests:
-            memory: "128Mi"
-            cpu: "50m"
-          limits:
-            memory: "256Mi"
-            cpu: "100m"
+          - name: GITHUB_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: github-token
+                key: token
