@@ -10,7 +10,7 @@ spec:
       - name: repository
         value: "git@github.com:iRavenIO/ForFreeIranAccountability.git"
       - name: branch
-        value: "main"
+        value: "master"
       - name: commit
         value: ""
       - name: docker-tag
