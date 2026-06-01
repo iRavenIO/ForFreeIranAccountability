@@ -47,7 +47,11 @@ export default function PersonProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [mapReady, setMapReady] = useState(false);
-  const publishAppData = process.env.NEXT_PUBLIC_PUBLISH_APP_DATA === 'true';
+  const [publishAppData, setPublishAppData] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/config').then(r => r.json()).then(d => setPublishAppData(d.publishAppData ?? false)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const id = params?.id;

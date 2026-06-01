@@ -27,9 +27,8 @@ interface City {
   totalRecords: number;
 }
 
-const publishAppData = process.env.NEXT_PUBLIC_PUBLISH_APP_DATA === 'true';
-
 export default function StandaloneSearchPage() {
+  const [publishAppData, setPublishAppData] = useState(false);
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [cities, setCities] = useState<City[]>([]);
   const [selectedProvince, setSelectedProvince] = useState('');
@@ -40,6 +39,10 @@ export default function StandaloneSearchPage() {
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    fetch('/api/config').then(r => r.json()).then(d => setPublishAppData(d.publishAppData ?? false)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch('/api/provinces')

@@ -30,7 +30,7 @@ accountability:
     NODE_ENV: "production"
     NEXT_PUBLIC_SITE_URL: "https://accountability.forfreeiran.com"
     NEXT_PUBLIC_APP_URL: "https://accountability.forfreeiran.com"
-    NEXT_PUBLIC_PUBLISH_APP_DATA: "true"
+    PUBLISH_APP_DATA: "true"
     DATABASE_PATH: "/app/data/accountability.db"
     DATABASE_URL: "file:/app/data/accountability.db"
 

@@ -25,7 +25,7 @@ export const config: AppConfig = {
   siteUrl: getEnv('NEXT_PUBLIC_SITE_URL', 'http://localhost:3000'),
   nodeEnv: getEnv('NODE_ENV', 'development'),
   port: parseInt(getEnv('PORT', '3000'), 10),
-  publishAppData: getEnv('NEXT_PUBLIC_PUBLISH_APP_DATA', 'false') === 'true',
+  publishAppData: getEnv('PUBLISH_APP_DATA', 'false') === 'true',
 };
 
 /**

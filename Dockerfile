@@ -12,8 +12,6 @@ RUN npm ci --omit=dev 2>/dev/null; npm ci 2>/dev/null || npm install
 
 COPY . .
 
-ARG NEXT_PUBLIC_PUBLISH_APP_DATA=true
-ENV NEXT_PUBLIC_PUBLISH_APP_DATA=$NEXT_PUBLIC_PUBLISH_APP_DATA
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npx prisma generate
 RUN npm run build

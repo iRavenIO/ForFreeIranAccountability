@@ -7,6 +7,9 @@ vault:
 persistence:
   storageClass: local-path
 
+env:
+  PUBLISH_APP_DATA: "true"
+
 ingress:
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-k3s-pi
