@@ -13,6 +13,7 @@ RUN npm ci --omit=dev 2>/dev/null; npm ci 2>/dev/null || npm install
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
+RUN npx prisma generate
 RUN npm run build
 
 # ---- Runtime Stage ----
