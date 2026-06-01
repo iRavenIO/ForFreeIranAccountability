@@ -9,6 +9,7 @@ export interface AppConfig {
   siteUrl: string;
   nodeEnv: string;
   port: number;
+  publishAppData: boolean;
 }
 
 function getEnv(key: string, fallback?: string): string {
@@ -24,6 +25,7 @@ export const config: AppConfig = {
   siteUrl: getEnv('NEXT_PUBLIC_SITE_URL', 'http://localhost:3000'),
   nodeEnv: getEnv('NODE_ENV', 'development'),
   port: parseInt(getEnv('PORT', '3000'), 10),
+  publishAppData: getEnv('NEXT_PUBLIC_PUBLISH_APP_DATA', 'false') === 'true',
 };
 
 /**

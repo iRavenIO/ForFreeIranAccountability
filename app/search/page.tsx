@@ -12,6 +12,8 @@ interface Person {
   sourceFile: string | null;
   sourceLabel?: string;
   reviewStatus: string;
+  maskedPhone?: string | null;
+  maskedPostal?: string | null;
 }
 
 interface Province {
@@ -24,6 +26,8 @@ interface City {
   city: string;
   totalRecords: number;
 }
+
+const publishAppData = process.env.NEXT_PUBLIC_PUBLISH_APP_DATA === 'true';
 
 export default function StandaloneSearchPage() {
   const [provinces, setProvinces] = useState<Province[]>([]);
@@ -199,6 +203,11 @@ export default function StandaloneSearchPage() {
                     }`}>
                       {person.reviewStatus === 'reviewed' ? 'بررسی شده' : 'در انتظار'}
                     </span>
+                    {publishAppData && person.maskedPostal && (
+                      <span className="bg-white/5 px-2 py-1 rounded font-mono" title="کد پستی (۴ رقم آخر)">
+                        {person.maskedPostal}
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}

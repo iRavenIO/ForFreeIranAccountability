@@ -345,6 +345,8 @@ async function importExcelFile(
           const postalCode = validatePostalCode(getField(['postalcode', 'postal_code', 'zipcode', 'zip_code', 'postcode', 'post_code']));
           const dob = getField(['dob', 'dateofbirth', 'date_of_birth', 'birthdate', 'birth_date']);
           const nationalId = getField(['nationalid', 'national_id', 'nationalcode', 'national_code', 'idnumber', 'id_number']);
+          const rawPhone = getField(['phone', 'mobile', 'tel', 'telephone', 'cellphone', 'cell', 'phonenumber', 'phone_number', 'mobilenumber', 'mobile_number', 'شماره', 'تلفن', 'موبایل']);
+          const dateOfAddress = getField(['dateofaddress', 'date_of_address', 'addressdate', 'address_date']);
 
           const address = cleanAddress(rawAddress);
           const province = normalizeProvince(rawProvince);
@@ -378,6 +380,19 @@ async function importExcelFile(
             reviewStatus: 'unreviewed',
           });
 
+          const cleanPhone = rawPhone ? rawPhone.replace(/\D/g, '') : null;
+          const maskedPhone = cleanPhone && cleanPhone.length >= 4
+            ? `****${cleanPhone.slice(-4)}`
+            : null;
+          const maskedPostal = postalCode && postalCode.length >= 4
+            ? `****${postalCode.slice(-4)}`
+            : null;
+
+          const cleanNationalId = nationalId ? nationalId.replace(/\D/g, '') : null;
+          const maskedNationalId = cleanNationalId && cleanNationalId.length >= 4
+            ? `****${cleanNationalId.slice(-4)}`
+            : null;
+
           publicPeopleData.push({
             fullName,
             province,
@@ -388,6 +403,15 @@ async function importExcelFile(
             notesPublic: null,
             approximateCityLat: coords?.lat ?? null,
             approximateCityLng: coords?.lng ?? null,
+            maskedPhone,
+            maskedPostal,
+            fullPhone: cleanPhone || null,
+            fullPostal: postalCode || null,
+            address: address || null,
+            dob: dob || null,
+            nationalId: cleanNationalId || null,
+            maskedNationalId,
+            dateOfAddress: dateOfAddress || null,
           });
 
           const hasSensitiveData = !!(postalCode || address || dob || nationalId);

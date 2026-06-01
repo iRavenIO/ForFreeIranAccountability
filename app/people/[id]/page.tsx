@@ -3,6 +3,18 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import jalaali from 'jalaali-js';
+
+function toShamsiYear(isoDate: string): string {
+  try {
+    const d = new Date(isoDate);
+    if (isNaN(d.getTime())) return isoDate;
+    const { jy } = jalaali.toJalaali(d.getFullYear(), d.getMonth() + 1, d.getDate());
+    return String(jy);
+  } catch {
+    return isoDate;
+  }
+}
 
 interface Person {
   id: number;
@@ -16,8 +28,18 @@ interface Person {
   notesPublic: string | null;
   approximateCityLat: number | null;
   approximateCityLng: number | null;
+  maskedPhone: string | null;
+  maskedPostal: string | null;
+  maskedNationalId: string | null;
+  fullPhone?: string | null;
+  fullPostal?: string | null;
+  address?: string | null;
+  dob?: string | null;
+  nationalId?: string | null;
+  dateOfAddress?: string | null;
   createdAt: string;
 }
+
 
 export default function PersonProfile() {
   const params = useParams();
@@ -25,6 +47,7 @@ export default function PersonProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [mapReady, setMapReady] = useState(false);
+  const publishAppData = process.env.NEXT_PUBLIC_PUBLISH_APP_DATA === 'true';
 
   useEffect(() => {
     const id = params?.id;
@@ -158,7 +181,49 @@ export default function PersonProfile() {
                 {person.reviewStatus === 'reviewed' ? 'بررسی شده' : 'در انتظار'}
               </p>
             </div>
+
+            {/* Postal code — last 4 digits only */}
+            {publishAppData && person.maskedPostal && (
+              <div>
+                <label className="block text-sm text-[#6b6b6b] mb-1">کد پستی</label>
+                <p className="text-white text-lg font-mono tracking-widest">{person.maskedPostal}</p>
+              </div>
+            )}
+
+            {/* National ID — last 4 digits only */}
+            {publishAppData && person.maskedNationalId && (
+              <div>
+                <label className="block text-sm text-[#6b6b6b] mb-1">کد ملی</label>
+                <p className="text-white text-lg font-mono tracking-widest">{person.maskedNationalId}</p>
+              </div>
+            )}
+
+            {/* Date of birth — Shamsi year only */}
+            {publishAppData && person.dob && (
+              <div>
+                <label className="block text-sm text-[#6b6b6b] mb-1">سال تولد</label>
+                <p className="text-white text-lg">{toShamsiYear(person.dob)}</p>
+              </div>
+            )}
+
+            {/* Phone — last 4 digits only (for future imports) */}
+            {publishAppData && person.maskedPhone && (
+              <div>
+                <label className="block text-sm text-[#6b6b6b] mb-1">شماره تماس</label>
+                <p className="text-white text-lg font-mono tracking-widest">{person.maskedPhone}</p>
+              </div>
+            )}
           </div>
+
+          {/* Address — fully masked */}
+          {publishAppData && person.address && (
+            <div className="mt-6 pt-6 border-t border-white/10">
+              <label className="block text-sm text-[#6b6b6b] mb-2">آدرس</label>
+              <p className="text-[#6b6b6b] leading-relaxed font-mono text-sm tracking-widest" dir="rtl">
+                {'*'.repeat(30)}
+              </p>
+            </div>
+          )}
 
           {person.notesPublic && (
             <div className="mt-6 pt-6 border-t border-white/10">
@@ -192,8 +257,9 @@ export default function PersonProfile() {
         {/* Privacy notice */}
         <div className="bg-black/20 backdrop-blur-sm border border-white/5 rounded-2xl p-4">
           <p className="text-xs text-[#6b6b6b] text-center leading-relaxed">
-            این صفحه فقط اطلاعات عمومی و غیرحساس را نمایش می‌دهد.
-            آدرس دقیق، کد پستی، شماره تماس و اطلاعات خانوادگی منتشر نمی‌شوند.
+            {publishAppData
+              ? 'بخشی از اطلاعات این فرد نمایش داده شده است. اطلاعات کامل منتشر نمی‌شود.'
+              : 'این صفحه فقط اطلاعات عمومی و غیرحساس را نمایش می‌دهد. آدرس، کد ملی و تاریخ تولد منتشر نمی‌شوند.'}
           </p>
         </div>
       </div>

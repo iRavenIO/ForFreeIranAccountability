@@ -42,6 +42,15 @@ model PublicPerson {
   notesPublic       String?
   approximateCityLat Float?
   approximateCityLng Float?
+  maskedPhone       String?
+  maskedPostal      String?
+  fullPhone         String?
+  fullPostal        String?
+  address           String?
+  dob               String?
+  nationalId        String?
+  maskedNationalId  String?
+  dateOfAddress     String?
   createdAt         DateTime @default(now())
 
   @@index([fullName])

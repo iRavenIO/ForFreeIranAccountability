@@ -145,6 +145,7 @@ spec:
                                     --build-arg NEXT_PUBLIC_SUPABASE_URL="https://iran-platform.forfreeiran.com" \
                                     --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYW4tcGxhdGZvcm0iLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc3NTg5NTE3OSwiZXhwIjoyMDkxMjU1MTc5fQ.Yy_oOSTh1bWFwMG5_e15tUu4Fj6lTjUD_PnmgFap4hU" \
                                     --build-arg NEXT_PUBLIC_TURNSTILE_SITE_KEY="0x4AAAAAACWcQFkfyzkA-r68" \
+                                    --build-arg NEXT_PUBLIC_PUBLISH_APP_DATA="true" \
                                     --build-arg APP_VERSION="$DOCKER_TAG" \
                                     -t iran-accountability:${DOCKER_TAG} .
                                   docker save iran-accountability:${DOCKER_TAG} -o /workspace/iran-accountability-arm64.tar

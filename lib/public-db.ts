@@ -39,6 +39,15 @@ export interface PublicPerson {
   notesPublic: string | null;
   approximateCityLat: number | null;
   approximateCityLng: number | null;
+  maskedPhone: string | null;
+  maskedPostal: string | null;
+  maskedNationalId: string | null;
+  fullPhone?: string | null;
+  fullPostal?: string | null;
+  address?: string | null;
+  dob?: string | null;
+  nationalId?: string | null;
+  dateOfAddress?: string | null;
   createdAt: string;
 }
 
@@ -187,6 +196,15 @@ async function doInit(): Promise<void> {
       notesPublic,
       approximateCityLat,
       approximateCityLng,
+      maskedPhone,
+      maskedPostal,
+      fullPhone,
+      fullPostal,
+      maskedNationalId,
+      address,
+      dob,
+      nationalId,
+      dateOfAddress,
       createdAt
     FROM diskdb.PublicPerson
   `);
@@ -543,10 +561,16 @@ export function searchPeople(
     )
     .all(...params, effectiveLimit, offset) as PublicPerson[];
 
-  // Add Persian source labels
+  // Add Persian source labels; expose sensitive fields only when flag is on
   const data = rows.map((r) => ({
     ...r,
     sourceLabel: getPersianSourceLabel(r.sourceFile),
+    fullPhone:     config.publishAppData ? (r as any).fullPhone     ?? null : undefined,
+    fullPostal:    config.publishAppData ? (r as any).fullPostal    ?? null : undefined,
+    address:       config.publishAppData ? (r as any).address       ?? null : undefined,
+    dob:           config.publishAppData ? (r as any).dob           ?? null : undefined,
+    nationalId:    config.publishAppData ? (r as any).nationalId    ?? null : undefined,
+    dateOfAddress: config.publishAppData ? (r as any).dateOfAddress ?? null : undefined,
   }));
 
   return {
@@ -580,7 +604,13 @@ export function getPersonById(id: number): PublicPerson | null {
   if (!row) return null;
   return {
     ...row,
-    sourceLabel: getPersianSourceLabel(row.sourceFile),
+    sourceLabel:   getPersianSourceLabel(row.sourceFile),
+    fullPhone:     config.publishAppData ? (row as any).fullPhone     ?? null : undefined,
+    fullPostal:    config.publishAppData ? (row as any).fullPostal    ?? null : undefined,
+    address:       config.publishAppData ? (row as any).address       ?? null : undefined,
+    dob:           config.publishAppData ? (row as any).dob           ?? null : undefined,
+    nationalId:    config.publishAppData ? (row as any).nationalId    ?? null : undefined,
+    dateOfAddress: config.publishAppData ? (row as any).dateOfAddress ?? null : undefined,
   };
 }
 
