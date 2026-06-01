@@ -4,6 +4,9 @@ fullnameOverride: "iran-accountability"
 vault:
   pathPrefix: k3s-pi/iran
 
+persistence:
+  storageClass: local-path
+
 ingress:
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-k3s-pi
