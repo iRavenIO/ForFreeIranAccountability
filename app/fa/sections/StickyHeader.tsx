@@ -89,15 +89,7 @@ export default function StickyHeader() {
       </nav>
 
       {/* Brand — minimal, right side */}
-      <div className="pointer-events-auto flex-shrink-0">
-        <a
-          href="#hero-section"
-          onClick={(e) => handleClick(e, '#hero-section')}
-          className="text-white/60 text-[11px] font-medium no-underline hover:text-white/90 transition-colors whitespace-nowrap"
-        >
-          آرشیو پاسخگویی
-        </a>
-      </div>
+      <div className="pointer-events-auto flex-shrink-0" />
     </header>
   );
 }
