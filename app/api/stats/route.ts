@@ -53,7 +53,7 @@ export async function GET() {
         count: s.count,
       })),
       lastUpdated: importLogs[0]?.createdAt || null,
-      recentImports: importLogs.map((log) => ({
+      recentImports: importLogs.map((log: typeof importLogs[number]) => ({
         fileName: log.fileName,
         rowsImported: log.rowsImported,
         rowsTotal: log.rowsTotal,
