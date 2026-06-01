@@ -57,7 +57,7 @@ export default function ContactSection() {
         {/* Footer branding */}
         <div className="mt-16 text-center">
           <div className="inline-block bg-black/30 backdrop-blur-md border border-white/5 rounded-2xl px-8 py-5">
-            <p className="text-white font-semibold text-base">For Free Iran</p>
+            <img src="/logo.png" alt="For Free Iran" className="h-12 mx-auto mb-2" />
             <p className="text-[#6b6b6b] text-sm mt-1" dir="ltr">
               accountability.forfreeiran.com
             </p>
