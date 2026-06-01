@@ -31,6 +31,7 @@ accountability:
     NEXT_PUBLIC_SITE_URL: "https://accountability.forfreeiran.com"
     NEXT_PUBLIC_APP_URL: "https://accountability.forfreeiran.com"
     DATABASE_PATH: "/app/data/accountability.db"
+    DATABASE_URL: "file:/app/data/accountability.db"
 
   secretEnv:
     - name: INTERNAL_ADMIN_TOKEN
