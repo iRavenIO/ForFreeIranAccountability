@@ -15,6 +15,9 @@ export default function ContactSection() {
           <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-8">
             <h3 className="text-white font-semibold mb-5">اطلاعات تماس</h3>
             <div className="space-y-4">
+              <p className="text-xs text-[#a0a0a0] leading-relaxed">
+                حزب مشروطه ایران (لیبرال دموکرات)
+              </p>
               <div className="flex items-center gap-3">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b6b6b" strokeWidth="2">
                   <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
@@ -58,6 +61,7 @@ export default function ContactSection() {
         <div className="mt-16 text-center">
           <div className="inline-block bg-black/30 backdrop-blur-md border border-white/5 rounded-2xl px-8 py-5">
             <img src="/logo.png" alt="For Free Iran" className="h-12 mx-auto mb-2" />
+            <p className="text-white font-semibold text-sm">حزب مشروطه ایران (لیبرال دموکرات)</p>
             <p className="text-[#6b6b6b] text-sm mt-1" dir="ltr">
               accountability.forfreeiran.com
             </p>

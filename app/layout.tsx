@@ -2,16 +2,16 @@ import type { Metadata } from 'next';
 import '@/styles/globals.css';
 
 export const metadata: Metadata = {
-  title: 'آرشیو پاسخگویی | Accountability Archive',
-  description: 'پایگاه داده اسامی و مکان‌ها - مستندسازی برای پاسخگویی.',
+  title: 'آرشیو پاسخگویی | حزب مشروطه ایران',
+  description: 'پایگاه داده اسامی و مکان‌ها - مستندسازی برای پاسخگویی. حزب مشروطه ایران (لیبرال دموکرات).',
   metadataBase: new URL('https://accountability.forfreeiran.com'),
   openGraph: {
-    title: 'آرشیو پاسخگویی — Accountability Archive',
+    title: 'آرشیو پاسخگویی — حزب مشروطه ایران',
     description: 'Documenting records for accountability and transparency.',
     type: 'website',
     locale: 'fa_IR',
   },
-  icons: { icon: '/logo-placeholder.svg' },
+  icons: { icon: '/logo.png' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
