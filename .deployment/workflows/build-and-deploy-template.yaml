@@ -73,10 +73,10 @@ spec:
               parameters:
                 - name: docker-tag
                   value: "{{workflow.parameters.docker-tag}}"
-                - name: git-email
-                  value: "ci@iraven.io"
-                - name: git-name
-                  value: "CI Bot"
+                - name: repository
+                  value: "{{workflow.parameters.repository}}"
+                - name: branch
+                  value: "{{workflow.parameters.branch}}"
 
           - name: deploy-ha00
             depends: update-version

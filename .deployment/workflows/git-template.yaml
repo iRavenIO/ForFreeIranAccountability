@@ -42,7 +42,7 @@ spec:
             git config user.name "ForFreeIran CI"
             git add version-values.yaml
             git commit -m "Deploy version $DOCKER_TAG to Harbor"
-            git push -f origin {{inputs.parameters.branch }} || { echo "Failed to push to repository"; exit 1; }
+            git push -f origin {{inputs.parameters.branch}} || { echo "Failed to push to repository"; exit 1; }
             echo "Successfully updated and pushed version $DOCKER_TAG"
         env:
           - name: GITHUB_TOKEN
